@@ -34,8 +34,8 @@ tests =
         "(e1,e2)"
         (Tuple [CstInt 1, CstInt 2])
         (ValTuple [ValInt 1, ValInt 2])
-      -- --
-      -- -- Should work after Task B.
+      --
+      -- Should work after Task B.
       -- evalTest
       --   "For loop"
       --   (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))

@@ -67,13 +67,34 @@ pBool =
       const False <$> lKeyword "false"
     ]
 
+parseParentheses :: Parser Exp
+parseParentheses = do
+    _ <- lString "("          
+    first <- pExp            
+    rest <- many 
+      (
+        do          
+          void $ lString ","     
+          pExp                    
+      )
+    _ <- lString ")"          
+    pure $ case rest of
+        []      -> first        
+        _       -> Tuple (first : rest)
+
+-- Parser for the empty tuple `()`
+parseEmptyTuple :: Parser Exp
+parseEmptyTuple = pure $ Tuple []
+
 pAtom :: Parser Exp
 pAtom =
   choice
     [ CstInt <$> lInteger,
       CstBool <$> pBool,
       Var <$> lVName,
-      try $ lString "(" *> pExp <* lString ")",
+      -- containing try $ lString "(" *> pExp <* lString ")",
+      try parseParentheses,
+      lString "(" *> parseEmptyTuple <* lString ")",
       KvPut <$> (lKeyword "put" *> pAtom) <*> pAtom,
       KvGet <$> (lKeyword "get" *> pAtom)
     ]
@@ -138,8 +159,29 @@ pExp2 = pExp3 >>= chain
           pure x
         ]
 
+pExp15 :: Parser Exp
+pExp15 =  pExp2 >>= chain
+  where
+    chain x =
+      choice
+        [ 
+          do 
+            lString "."
+            y <- lInteger
+            chain $ Project x y,
+          do         -- TODO priority, and is greater than or?
+            lString "&&"
+            y <- pExp2
+            chain $ BothOf x y,
+          do         
+            lString "||"
+            y <- pExp2
+            chain $ OneOf x y,
+          pure x
+        ]
+
 pExp1 :: Parser Exp
-pExp1 = pExp2 >>= chain
+pExp1 = pExp15 >>= chain
   where
     chain x =
       choice

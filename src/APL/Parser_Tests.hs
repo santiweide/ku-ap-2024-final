@@ -26,6 +26,12 @@ tests =
   testGroup
     "Parsing"
     [ -- Example tests
-      parserTest "x+y" $ Add (Var "x") (Var "y"),
-      parserTestFail "x+"
+      parserTest "x+y" $ Add (Var "x") (Var "y")
+      , parserTestFail "x+"
+      , parserTest  "(1,2,3)" $ (Tuple [CstInt 1,CstInt 2,CstInt 3])
+      -- tuple index
+      , parserTest "(1,2,3).2" $ (Project (Tuple [CstInt 1,CstInt 2,CstInt 3]) 2)
+      , parserTest "(true, false).0" $ (Project (Tuple [CstBool True,CstBool False]) 0)
+      -- parenthese
+      , parserTest "(1)" $ (CstInt 1)
     ]

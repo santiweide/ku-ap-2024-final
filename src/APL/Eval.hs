@@ -62,3 +62,71 @@ eval (Apply e1 e2) = do
       localEnv (const $ envExtend var arg f_env) $ eval body
     (_, _) ->
       failure "Cannot apply non-function"
+
+eval (Tuple elements) =
+  case elements of
+    [] -> do
+      pure (ValTuple [])
+    [_] -> do
+      failure $ "Evaluation of tuple should not be 1-lengthed\n"
+    _ -> do
+      values <- mapM eval elements
+      pure (ValTuple values)
+
+eval (Project tupleExp index) = do
+  tupleVal <- eval tupleExp
+  case tupleVal of
+    ValTuple elements ->
+      let idx = fromIntegral index
+      in if idx >= 0 && idx < (length elements)
+           then pure $ elements !! idx  
+           else failure "index out of bounds"
+    _ -> failure "invalid tuple"
+
+-- eval (ForLoop initial var bound body) = do
+-- ForLoop (VName, Exp) (VName, Exp) Exp
+eval (ForLoop (p, initial) (vloop, bound) body) = undefined
+  -- do
+  -- vInit <- eval initial 
+  -- loop vInit bound
+  -- where
+  --   loop :: Val -> Exp -> EvalM Val
+  --   loop currentVal boundExp = do 
+  --     vBound <- eval boundExp 
+  --     case (currentVal, vBound) of
+  --       (ValInt n, ValInt b) | n < b -> do
+  --         localEnv (envExtend var (ValInt n)) $ do
+  --           v <- eval body 
+  --           loop v boundExp 
+  --       _ -> pure currentVal
+
+-- WhileLoop (VName, Exp) Exp Exp
+eval (WhileLoop (p, initial) cond body) = undefined
+
+-- eval (WhileLoop initial cond body) = do
+--     vInit <- eval initial 
+--     env <- askEnv 
+--     loop vInit env
+--     where
+--       loop :: Val -> Env -> EvalM Val
+--       loop currentVal curEnv = do
+--         vCond <- localEnv (const curEnv) $ eval cond
+--         case vCond of
+--           ValBool True -> do
+--             localEnv (const curEnv) $ do
+--                 v <- eval body
+--                 newEnv <- askEnv
+--                 loop v newEnv
+--           ValBool False -> pure currentVal 
+--           _ -> failure "Condition must evaluate to a boolean"
+
+
+eval (BothOf a b) = do
+  va <- eval a 
+  vb <- eval b 
+  pure $ ValTuple [va, vb]
+
+eval (OneOf a b) = do
+  va <- eval a 
+  _ <- eval b 
+  pure $ va

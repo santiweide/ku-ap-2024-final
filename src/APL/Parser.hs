@@ -34,7 +34,11 @@ keywords =
     "let",
     "in",
     "put",
-    "get"
+    "get",
+    "loop",
+    "for",
+    "do",
+    "while"
   ]
 
 lVName :: Parser VName

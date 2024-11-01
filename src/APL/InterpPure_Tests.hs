@@ -79,6 +79,10 @@ tests =
         "While loop "
         (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Mul (Var "x") (CstInt 2)))
         (ValInt 2)
+      , evalTest
+        "For and While Loop"
+        (WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)]))
+        (ValTuple [ValInt 1024,ValInt 0])
       --
       -- -- Should work after task C.
       -- evalTest

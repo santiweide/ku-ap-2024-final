@@ -5,6 +5,7 @@ where
 
 import APL.AST (Exp (..), VName)
 import APL.Monad
+import Debug.Trace
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
@@ -63,6 +64,16 @@ eval (Apply e1 e2) = do
     (_, _) ->
       failure "Cannot apply non-function"
 
+eval (KvPut key value) = do
+    k <- eval key
+    v <- eval value
+    evalKvPut k v
+    pure $ v
+
+eval (KvGet key) = do
+    k <- eval key
+    evalKvGet k
+
 eval (Tuple elements) =
   case elements of
     [] -> do
@@ -83,9 +94,6 @@ eval (Project tupleExp index) = do
            else failure "index out of bounds"
     _ -> failure "invalid projection doing to a non-tuple!"
 
--- use the StepOp effect (via evalStep) in the following cases: 
---    just before a loop body is executed (for both for-and while-loops), 
---      and just before a function value is applied.
 eval (ForLoop (p, initial) (i, bound) pBody) = do
   pInit <- eval initial 
   valBound <- eval bound 
@@ -106,8 +114,7 @@ eval (ForLoop (p, initial) (i, bound) pBody) = do
                     _ -> pure pVal
     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
 
--- in a while-loop p is in scope when evaluating cond, 
--- WhileLoop (VName, Exp) Exp Exp
+-- p is in scope when evaluating cond,
 eval (WhileLoop (p, initial) cond pBody) = do
   pInit <- eval initial 
   env <- askEnv 
@@ -125,30 +132,9 @@ eval (WhileLoop (p, initial) cond pBody) = do
             ValBool False -> pure pVal 
             _ -> failure "Condition must evaluate to a boolean"
 
--- 1. Evaluate expression init to a value v.
--- 2. Bind variable p to v.
--- 3. Evaluate expression cond to a boolean c. 
---   It is an error if c does not evaluate to a boolean. 
---     If c is false, the loop stops and returns the value of p. 
---     Otherwise, if c is true, evaluate expression body and bind p to the result.
+eval (BothOf e1 e2) = do
+  evalBothOf (eval e1) (eval e2)
 
-eval (BothOf a b) = do
-  va <- eval a 
-  vb <- eval b 
-  pure $ ValTuple [va, vb]
+eval (OneOf e1 e2) = do
+  evalOneOf (eval e1) (eval e2)
 
-eval (OneOf a b) = do
-  va <- eval a 
-  _ <- eval b 
-  pure $ va
-
--- TODO just copy from a4
-eval (KvPut key value) = do
-    k <- eval key
-    v <- eval value
-    evalKvPut k v
-    pure $ v
-
-eval (KvGet key) = do
-    k <- eval key
-    evalKvGet k

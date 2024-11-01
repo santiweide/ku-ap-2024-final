@@ -29,7 +29,7 @@ tests =
         "State (unknown key)"
         (KvGet (CstInt 0))
       ---------------------
-      -- Tuple Test Zone --
+      -- Tuple Test  --
       ---------------------
       -- Should work after task A.
       , evalTest
@@ -64,7 +64,7 @@ tests =
         "Projection out-of-range"
         (Let "x" (Tuple [CstInt 1,CstInt 2,CstInt 3,CstInt 4]) (Project (Var "x") 4))
       ---------------------
-      -- Loop Test Zone --
+      -- Loop Test  --
       ---------------------
       -- Should work after Task B.
      , evalTest
@@ -84,21 +84,38 @@ tests =
         (WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)]))
         (ValTuple [ValInt 1024,ValInt 0])
       --
-      -- -- Should work after task C.
-      -- evalTest
-      --   "e1 && e2"
-      --   (BothOf (CstInt 0) (CstInt 1))
-      --   (ValTuple [ValInt 0, ValInt 1]),
-      -- --
-      -- -- Should work after task C.
-      -- evalTest
-      --   "e1 || e2"
-      --   (OneOf (CstInt 0) (CstInt 1))
-      --   (ValInt 0),
-      -- --
-      -- -- Should work after task C.
-      -- evalTest
-      --   "e1 || e2 (first fails)"
-      --   (OneOf (KvGet (CstInt 0)) (CstInt 1))
-      --   (ValInt 1)
+      -- Should work after task C.
+      , evalTest
+        "e1 && e2"
+        (BothOf (CstInt 0) (CstInt 1))
+        (ValTuple [ValInt 0, ValInt 1])
+      , evalTestFail
+        "e1 && e2 (second fails)"
+        (BothOf (CstInt 1) (KvGet (CstInt 0)) )
+      --
+      -- Should work after task C.
+      , evalTest
+        "e1 || e2"
+        (OneOf (CstInt 0) (CstInt 1))
+        (ValInt 0)
+      -- 
+      -- A complicated one
+      , evalTest
+        "e1 || e2 -> e1 in pure"
+        (OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6)))
+        (ValInt 3)
+      --
+      -- Should work after task C.
+      , evalTest
+        "e1 || e2 (first fails)"
+        (OneOf (KvGet (CstInt 1)) (CstInt 1))
+        (ValInt 1)
+      , evalTest
+        "e1 || e2 (second fails)"
+        (OneOf (CstInt 1) (KvGet (CstInt 1)) )
+        (ValInt 1)
+      , evalTestFail
+        "e1 || e2 (both fails)"
+        (OneOf (KvGet (CstInt 1)) (KvGet (CstInt 0)) )
+
     ]

@@ -29,7 +29,7 @@ tests =
       parserTest "x+y" $ Add (Var "x") (Var "y")
       , parserTestFail "x+"
       --------------------
-      ---- Tuple Zone ----
+      ---- Tuple ----
       --------------------
       -- tuple empty
       , parserTest  "()" $ (Tuple [])
@@ -48,7 +48,7 @@ tests =
       -- projection
       , parserTest "let x = (1,2) in x.0" $ (Let "x" (Tuple [CstInt 1,CstInt 2]) (Project (Var "x") 0))
       --------------------
-      ---- Loops Zone ----
+      ---- Loops ----
       --------------------
       -- normal for loop
       , parserTest "loop x = 1 for i < 5 do x * 2" $ (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
@@ -56,4 +56,13 @@ tests =
       , parserTest "loop x = 1 while x == 1 do x" $ (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))
       -- normal while mix for loop
       , parserTest "loop x = (1,10) while if (x.1 == 0) then false else true do (x.0*2,x.1-1)" $ WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)])
+      ------------------------
+      ---- && and || ----
+      ------------------------
+      , parserTest "(1+2)||(3+4+5+6)" $ OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6))
+      , parserTest "(1+2) && (3+4)" $ BothOf (Add (CstInt 1) (CstInt 2)) (Add (CstInt 3) (CstInt 4))
+      -- priority && > || -- has parentheses, then BothOf stands
+      , parserTest "(1*10 || 2-20) && (3+4)" $ BothOf (OneOf (Mul (CstInt 1) (CstInt 10)) (Sub (CstInt 2) (CstInt 20))) (Add (CstInt 3) (CstInt 4))
+      -- priority && > || -- no parentheses, then OneOf
+      , parserTest "1*10 || 2-20 && 3+4" $ OneOf (Mul (CstInt 1) (CstInt 10)) (BothOf (Sub (CstInt 2) (CstInt 20)) (Add (CstInt 3) (CstInt 4)))
     ]

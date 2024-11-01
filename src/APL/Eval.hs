@@ -130,3 +130,14 @@ eval (OneOf a b) = do
   va <- eval a 
   _ <- eval b 
   pure $ va
+
+-- TODO just copy from a4
+eval (KvPut key value) = do
+    k <- eval key
+    v <- eval value
+    evalKvPut k v
+    pure $ v
+
+eval (KvGet key) = do
+    k <- eval key
+    evalKvGet k

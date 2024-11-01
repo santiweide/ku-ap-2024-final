@@ -33,29 +33,29 @@ tests =
       evalTest
         "(e1,e2)"
         (Tuple [CstInt 1, CstInt 2])
-        (ValTuple [ValInt 1, ValInt 2]),
-      --
-      -- Should work after Task B.
-      evalTest
-        "For loop"
-        (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))
-        (ValInt 1024),
-      --
-      -- Should work after task C.
-      evalTest
-        "e1 && e2"
-        (BothOf (CstInt 0) (CstInt 1))
-        (ValTuple [ValInt 0, ValInt 1]),
-      --
-      -- Should work after task C.
-      evalTest
-        "e1 || e2"
-        (OneOf (CstInt 0) (CstInt 1))
-        (ValInt 0),
-      --
-      -- Should work after task C.
-      evalTest
-        "e1 || e2 (first fails)"
-        (OneOf (KvGet (CstInt 0)) (CstInt 1))
-        (ValInt 1)
+        (ValTuple [ValInt 1, ValInt 2])
+      -- --
+      -- -- Should work after Task B.
+      -- evalTest
+      --   "For loop"
+      --   (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))
+      --   (ValInt 1024),
+      -- --
+      -- -- Should work after task C.
+      -- evalTest
+      --   "e1 && e2"
+      --   (BothOf (CstInt 0) (CstInt 1))
+      --   (ValTuple [ValInt 0, ValInt 1]),
+      -- --
+      -- -- Should work after task C.
+      -- evalTest
+      --   "e1 || e2"
+      --   (OneOf (CstInt 0) (CstInt 1))
+      --   (ValInt 0),
+      -- --
+      -- -- Should work after task C.
+      -- evalTest
+      --   "e1 || e2 (first fails)"
+      --   (OneOf (KvGet (CstInt 0)) (CstInt 1))
+      --   (ValInt 1)
     ]

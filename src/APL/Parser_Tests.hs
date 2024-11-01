@@ -28,10 +28,28 @@ tests =
     [ -- Example tests
       parserTest "x+y" $ Add (Var "x") (Var "y")
       , parserTestFail "x+"
-      , parserTest  "(1,2,3)" $ (Tuple [CstInt 1,CstInt 2,CstInt 3])
+      --------------------
+      ---- Tuple Zone ----
+      --------------------
+      -- tuple empty
+      , parserTest  "()" $ (Tuple [])
+      -- tuple not empty
+      , parserTest  "(1,2)" $ (Tuple [CstInt 1,CstInt 2])
+      -- tuple with complex elements, mixing parentheses
+      , parserTest  "((x*y),2-1,let x=10 in y+z)" $ (Tuple [Mul (Var "x") (Var "y"),Sub (CstInt 2) (CstInt 1),Let "x" (CstInt 10) (Add (Var "y") (Var "z"))])
       -- tuple index
       , parserTest "(1,2,3).2" $ (Project (Tuple [CstInt 1,CstInt 2,CstInt 3]) 2)
-      , parserTest "(true, false).0" $ (Project (Tuple [CstBool True,CstBool False]) 0)
-      -- parenthese
+      -- tuple with complex elements and index
+      , parserTest "(x+y, (x+y+z)).0" $ (Project (Tuple [Add (Var "x") (Var "y"),Add (Add (Var "x") (Var "y")) (Var "z")]) 0)
+      -- parenthese, in case we mistake for a tuple
       , parserTest "(1)" $ (CstInt 1)
+      -- tuple inside a parenthese inside a tuple
+      , parserTest "((1,2,(1,2,3)))" $ (Tuple [CstInt 1,CstInt 2,Tuple [CstInt 1,CstInt 2,CstInt 3]])
+      -- projection
+      , parserTest "let x = (1,2) in x.0" $ (Let "x" (Tuple [CstInt 1,CstInt 2]) (Project (Var "x") 0))
+      --------------------
+      ---- Loops Zone ----
+      --------------------
+      , parserTest "let x = (1,2) in x.0" $ (Let "x" (Tuple [CstInt 1,CstInt 2]) (Project (Var "x") 0))
+
     ]

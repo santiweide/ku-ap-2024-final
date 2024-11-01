@@ -169,7 +169,7 @@ pExp15 =  pExp2 >>= chain
             lString "."
             y <- lInteger
             chain $ Project x y,
-          do         -- TODO priority, and is greater than or?
+          do         -- TODO priority, BothOf and OneOf, which is higher?
             lString "&&"
             y <- pExp2
             chain $ BothOf x y,

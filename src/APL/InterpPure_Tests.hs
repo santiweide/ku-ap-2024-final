@@ -27,13 +27,17 @@ tests =
     "Pure interpreter"
     [ evalTestFail
         "State (unknown key)"
-        (KvGet (CstInt 0)),
+        (KvGet (CstInt 0))
       --
       -- Should work after task A.
-      evalTest
+      , evalTest
         "(e1,e2)"
         (Tuple [CstInt 1, CstInt 2])
         (ValTuple [ValInt 1, ValInt 2])
+      , evalTest
+        "tuple eval order"
+        (Tuple [KvPut (CstInt 1) (CstInt 2), KvGet (CstInt 1), KvPut (CstInt 1) (CstInt 3), KvGet (CstInt 1)])
+        (ValTuple [ValInt 2,ValInt 2,ValInt 3,ValInt 3])
       --
       -- Should work after Task B.
       -- evalTest

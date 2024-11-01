@@ -5,7 +5,6 @@ where
 
 import APL.AST (Exp (..), VName)
 import APL.Monad
-import Debug.Trace
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
@@ -94,13 +93,13 @@ eval (Project tupleExp index) = do
            else failure "index out of bounds"
     _ -> failure "invalid projection doing to a non-tuple!"
 
-eval (ForLoop (p, initial) (i, bound) pBody) = do
+eval (ForLoop (q, initial) (j, bound) pBody) = do
   pInit <- eval initial 
   valBound <- eval bound 
   case valBound of 
     ValInt vBound -> do 
-        localEnv (envExtend i (ValInt 0)) $ 
-          loop p pInit i (ValInt vBound)
+        localEnv (envExtend j (ValInt 0)) $ 
+          loop q pInit j (ValInt vBound)
             where 
               loop :: VName -> Val -> VName -> Val -> EvalM Val
               loop p pVal i iBound = do 
@@ -115,20 +114,18 @@ eval (ForLoop (p, initial) (i, bound) pBody) = do
     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
 
 -- p is in scope when evaluating cond,
-eval (WhileLoop (p, initial) cond pBody) = do
+eval (WhileLoop (q, initial) cond pBody) = do
   pInit <- eval initial 
-  env <- askEnv 
-  loop p pInit env
+  loop q pInit
     where 
-      loop :: VName -> Val -> Env -> EvalM Val
-      loop p pVal curEnv = do 
+      loop :: VName -> Val -> EvalM Val
+      loop p pVal = do 
           cVal <- localEnv (envExtend p pVal) $ eval cond
           case cVal of 
             ValBool True -> evalStep $ do
               localEnv (envExtend p pVal) $ do
                 pVal' <- eval pBody
-                newEnv <- askEnv
-                loop p pVal' newEnv
+                loop p pVal' 
             ValBool False -> pure pVal 
             _ -> failure "Condition must evaluate to a boolean"
 

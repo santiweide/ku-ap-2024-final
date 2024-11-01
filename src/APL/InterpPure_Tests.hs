@@ -28,7 +28,9 @@ tests =
     [ evalTestFail
         "State (unknown key)"
         (KvGet (CstInt 0))
-      --
+      ---------------------
+      -- Tuple Test Zone --
+      ---------------------
       -- Should work after task A.
       , evalTest
         "(e1,e2)"
@@ -61,14 +63,19 @@ tests =
       , evalTestFail
         "Projection out-of-range"
         (Let "x" (Tuple [CstInt 1,CstInt 2,CstInt 3,CstInt 4]) (Project (Var "x") 4))
-
-      --
+      ---------------------
+      -- Loop Test Zone --
+      ---------------------
       -- Should work after Task B.
-      -- evalTest
-      --   "For loop"
-      --   (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))
-      --   (ValInt 1024),
-      -- --
+     , evalTest
+        "For loop"
+        (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))
+        (ValInt 1024)
+     , evalTest
+        "For loop 2^5=32"
+        (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
+        (ValInt 32)
+      --
       -- -- Should work after task C.
       -- evalTest
       --   "e1 && e2"

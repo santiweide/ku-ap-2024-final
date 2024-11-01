@@ -3,7 +3,7 @@ module APL.Eval
   )
 where
 
-import APL.AST (Exp (..))
+import APL.AST (Exp (..), VName)
 import APL.Monad
 
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
@@ -51,15 +51,15 @@ eval (If cond e1 e2) = do
 eval (Let var e1 e2) = do
   v1 <- eval e1
   localEnv (envExtend var v1) $ eval e2
-eval (Lambda var body) = do
+eval (Lambda var pBody) = do
   env <- askEnv
-  pure $ ValFun env var body
+  pure $ ValFun env var pBody
 eval (Apply e1 e2) = do
   v1 <- eval e1
   v2 <- eval e2
   case (v1, v2) of
-    (ValFun f_env var body, arg) ->
-      localEnv (const $ envExtend var arg f_env) $ eval body
+    (ValFun f_env var pBody, arg) ->
+      localEnv (const $ envExtend var arg f_env) $ eval pBody
     (_, _) ->
       failure "Cannot apply non-function"
 
@@ -83,9 +83,57 @@ eval (Project tupleExp index) = do
            else failure "index out of bounds"
     _ -> failure "invalid projection doing to a non-tuple!"
 
--- eval (ForLoop initial var bound body) = do
+
+-- for i = 0; i < bound do pBody
 -- ForLoop (VName, Exp) (VName, Exp) Exp
-eval (ForLoop (p, initial) (vloop, bound) body) = undefined
+-- in a for-loop, p is not in scope when evaluating bound.
+-- eval (ForLoop (p, initial) (i, bound) pBody) = 
+--   do
+--   pInit <- eval initial 
+--   valBound <- eval bound 
+--   case valBound of 
+--     ValInt vBound -> do 
+--         localEnv (envExtend i (ValInt 0)) $ 
+--           loop p pInit i (ValInt vBound)
+--             where 
+--               loop :: VName -> Val -> VName -> Val -> EvalM Val
+--               loop p pVal i iBound = do 
+--                   iVal <- eval (Var i)
+--                   -- evaluating bound using pure Val
+--                   if iVal < iBound 
+--                     then do
+--                       localEnv (envExtend p pVal) $ do -- now p is in scope
+--                         pVal' <- eval pBody 
+--                         -- Increment i.
+--                         iVal' <- eval $ Add (Var i) (CstInt 1)
+--                         localEnv (envExtend i iVal') $ do
+--                           loop p pVal' i iBound 
+--                   else do
+--                     -- Return the final value of p.
+--                     pure pVal
+--     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
+
+
+eval (ForLoop (p, initial) (i, bound) pBody) = 
+  do
+  pInit <- eval initial 
+  valBound <- eval bound 
+  case valBound of 
+    ValInt vBound -> do 
+        localEnv (envExtend i (ValInt 0)) $ 
+          loop p pInit i (ValInt vBound)
+            where 
+              loop :: VName -> Val -> VName -> Val -> EvalM Val
+              loop p pVal i iBound = do 
+                  iVal <- eval (Var i)
+                  case iVal of
+                    ValInt iCur | (ValInt iCur) < iBound -> do
+                      pVal' <- localEnv (envExtend p pVal) $ eval pBody
+                      iVal' <- eval (Add (Var i) (CstInt 1))
+                      localEnv (envExtend i iVal') $ loop p pVal' i iBound
+                    _ -> pure pVal
+    _ -> failure "[ForLoop]bound should be evaled to a ValInt"
+
   -- do
   -- vInit <- eval initial 
   -- loop vInit bound
@@ -96,14 +144,16 @@ eval (ForLoop (p, initial) (vloop, bound) body) = undefined
   --     case (currentVal, vBound) of
   --       (ValInt n, ValInt b) | n < b -> do
   --         localEnv (envExtend var (ValInt n)) $ do
-  --           v <- eval body 
+  --           v <- eval pBody 
   --           loop v boundExp 
   --       _ -> pure currentVal
 
--- WhileLoop (VName, Exp) Exp Exp
-eval (WhileLoop (p, initial) cond body) = undefined
+-- in a while-loop p is in scope when evaluating cond, 
 
--- eval (WhileLoop initial cond body) = do
+-- WhileLoop (VName, Exp) Exp Exp
+eval (WhileLoop (p, initial) cond pBody) = undefined
+
+-- eval (WhileLoop initial cond pBody) = do
 --     vInit <- eval initial 
 --     env <- askEnv 
 --     loop vInit env
@@ -114,7 +164,7 @@ eval (WhileLoop (p, initial) cond body) = undefined
 --         case vCond of
 --           ValBool True -> do
 --             localEnv (const curEnv) $ do
---                 v <- eval body
+--                 v <- eval pBody
 --                 newEnv <- askEnv
 --                 loop v newEnv
 --           ValBool False -> pure currentVal 

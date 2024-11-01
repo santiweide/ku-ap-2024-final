@@ -50,5 +50,6 @@ tests =
       --------------------
       ---- Loops Zone ----
       --------------------
+      , parserTest "loop x = 1 for i < 5 do x * 2" $ (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
 
     ]

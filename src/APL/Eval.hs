@@ -58,7 +58,7 @@ eval (Apply e1 e2) = do
   v1 <- eval e1
   v2 <- eval e2
   case (v1, v2) of
-    (ValFun f_env var pBody, arg) ->
+    (ValFun f_env var pBody, arg) ->  evalStep $ 
       localEnv (const $ envExtend var arg f_env) $ eval pBody
     (_, _) ->
       failure "Cannot apply non-function"
@@ -83,6 +83,9 @@ eval (Project tupleExp index) = do
            else failure "index out of bounds"
     _ -> failure "invalid projection doing to a non-tuple!"
 
+-- use the StepOp effect (via evalStep) in the following cases: 
+--    just before a loop body is executed (for both for-and while-loops), 
+--      and just before a function value is applied.
 eval (ForLoop (p, initial) (i, bound) pBody) = do
   pInit <- eval initial 
   valBound <- eval bound 
@@ -96,7 +99,7 @@ eval (ForLoop (p, initial) (i, bound) pBody) = do
                   iVal <- eval (Var i)
                   case iVal of
                     -- ValInt in Val is deriving Ord, so we can make cmp directly.
-                    ValInt iCur | (ValInt iCur) < iBound -> do 
+                    ValInt iCur | (ValInt iCur) < iBound -> evalStep $ do 
                       pVal' <- localEnv (envExtend p pVal) $ eval pBody
                       iVal' <- eval (Add (Var i) (CstInt 1))
                       localEnv (envExtend i iVal') $ loop p pVal' i iBound
@@ -114,7 +117,7 @@ eval (WhileLoop (p, initial) cond pBody) = do
       loop p pVal curEnv = do 
           cVal <- localEnv (envExtend p pVal) $ eval cond
           case cVal of 
-            ValBool True -> do
+            ValBool True -> evalStep $ do
               localEnv (envExtend p pVal) $ do
                 pVal' <- eval pBody
                 newEnv <- askEnv

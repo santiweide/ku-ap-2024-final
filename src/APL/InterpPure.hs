@@ -21,3 +21,4 @@ runEval = fmap fst $ runEval' envEmpty stateInitial
       let s' = (key, val) : filter ((/= key) . fst) s
        in runEval' r s' m
     runEval' _ s (Free (ErrorOp e)) = (Left e, s)
+    runEval' r s (Free (StepOp next)) = runEval' r s next    

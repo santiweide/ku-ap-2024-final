@@ -39,9 +39,15 @@ tests =
       -- tuple-eval-order is from left to right
       -- (e1, e2, e3, e4)::e1->e2->e3->e4
       , evalTest
-        "tuple eval order" 
+        "tuple eval order - success" 
         (Tuple [KvPut (CstInt 1) (CstInt 2), KvGet (CstInt 1), KvPut (CstInt 1) (CstInt 3), KvGet (CstInt 1)])
         (ValTuple [ValInt 2,ValInt 2,ValInt 3,ValInt 3])
+      , evalTestFail
+        "tuple eval order - failed at 1" 
+        (Tuple [KvPut (CstInt 100) (CstInt 2), KvGet (CstInt 1), KvPut (CstInt 1) (CstInt 3), KvGet (CstInt 1)])
+      , evalTestFail
+        "tuple eval order - failed at 3" 
+        (Tuple [KvPut (CstInt 1) (CstInt 2), KvGet (CstInt 1), KvPut (CstInt 1) (CstInt 3), KvGet (CstInt 100)])
       -- (e0, e1, e2).2 = e2
       , evalTest
         "Projection valid tuple and valid index"
@@ -83,7 +89,9 @@ tests =
         "For and While Loop"
         (WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)]))
         (ValTuple [ValInt 1024,ValInt 0])
-      --
+      ---------------------------
+      -- Concurrency Test Pure --
+      ---------------------------
       -- Should work after task C.
       , evalTest
         "e1 && e2"

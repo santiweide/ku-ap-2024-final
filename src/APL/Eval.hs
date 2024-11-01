@@ -83,39 +83,7 @@ eval (Project tupleExp index) = do
            else failure "index out of bounds"
     _ -> failure "invalid projection doing to a non-tuple!"
 
-
--- for i = 0; i < bound do pBody
--- ForLoop (VName, Exp) (VName, Exp) Exp
--- in a for-loop, p is not in scope when evaluating bound.
--- eval (ForLoop (p, initial) (i, bound) pBody) = 
---   do
---   pInit <- eval initial 
---   valBound <- eval bound 
---   case valBound of 
---     ValInt vBound -> do 
---         localEnv (envExtend i (ValInt 0)) $ 
---           loop p pInit i (ValInt vBound)
---             where 
---               loop :: VName -> Val -> VName -> Val -> EvalM Val
---               loop p pVal i iBound = do 
---                   iVal <- eval (Var i)
---                   -- evaluating bound using pure Val
---                   if iVal < iBound 
---                     then do
---                       localEnv (envExtend p pVal) $ do -- now p is in scope
---                         pVal' <- eval pBody 
---                         -- Increment i.
---                         iVal' <- eval $ Add (Var i) (CstInt 1)
---                         localEnv (envExtend i iVal') $ do
---                           loop p pVal' i iBound 
---                   else do
---                     -- Return the final value of p.
---                     pure pVal
---     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
-
-
-eval (ForLoop (p, initial) (i, bound) pBody) = 
-  do
+eval (ForLoop (p, initial) (i, bound) pBody) = do
   pInit <- eval initial 
   valBound <- eval bound 
   case valBound of 
@@ -127,49 +95,39 @@ eval (ForLoop (p, initial) (i, bound) pBody) =
               loop p pVal i iBound = do 
                   iVal <- eval (Var i)
                   case iVal of
-                    ValInt iCur | (ValInt iCur) < iBound -> do
+                    -- ValInt in Val is deriving Ord, so we can make cmp directly.
+                    ValInt iCur | (ValInt iCur) < iBound -> do 
                       pVal' <- localEnv (envExtend p pVal) $ eval pBody
                       iVal' <- eval (Add (Var i) (CstInt 1))
                       localEnv (envExtend i iVal') $ loop p pVal' i iBound
                     _ -> pure pVal
     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
 
-  -- do
-  -- vInit <- eval initial 
-  -- loop vInit bound
-  -- where
-  --   loop :: Val -> Exp -> EvalM Val
-  --   loop currentVal boundExp = do 
-  --     vBound <- eval boundExp 
-  --     case (currentVal, vBound) of
-  --       (ValInt n, ValInt b) | n < b -> do
-  --         localEnv (envExtend var (ValInt n)) $ do
-  --           v <- eval pBody 
-  --           loop v boundExp 
-  --       _ -> pure currentVal
-
 -- in a while-loop p is in scope when evaluating cond, 
-
 -- WhileLoop (VName, Exp) Exp Exp
-eval (WhileLoop (p, initial) cond pBody) = undefined
+eval (WhileLoop (p, initial) cond pBody) = do
+  pInit <- eval initial 
+  env <- askEnv 
+  loop p pInit env
+    where 
+      loop :: VName -> Val -> Env -> EvalM Val
+      loop p pVal curEnv = do 
+          cVal <- localEnv (envExtend p pVal) $ eval cond
+          case cVal of 
+            ValBool True -> do
+              localEnv (envExtend p pVal) $ do
+                pVal' <- eval pBody
+                newEnv <- askEnv
+                loop p pVal' newEnv
+            ValBool False -> pure pVal 
+            _ -> failure "Condition must evaluate to a boolean"
 
--- eval (WhileLoop initial cond pBody) = do
---     vInit <- eval initial 
---     env <- askEnv 
---     loop vInit env
---     where
---       loop :: Val -> Env -> EvalM Val
---       loop currentVal curEnv = do
---         vCond <- localEnv (const curEnv) $ eval cond
---         case vCond of
---           ValBool True -> do
---             localEnv (const curEnv) $ do
---                 v <- eval pBody
---                 newEnv <- askEnv
---                 loop v newEnv
---           ValBool False -> pure currentVal 
---           _ -> failure "Condition must evaluate to a boolean"
-
+-- 1. Evaluate expression init to a value v.
+-- 2. Bind variable p to v.
+-- 3. Evaluate expression cond to a boolean c. 
+--   It is an error if c does not evaluate to a boolean. 
+--     If c is false, the loop stops and returns the value of p. 
+--     Otherwise, if c is true, evaluate expression body and bind p to the result.
 
 eval (BothOf a b) = do
   va <- eval a 

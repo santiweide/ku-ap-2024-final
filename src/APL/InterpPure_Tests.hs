@@ -75,6 +75,10 @@ tests =
         "For loop 2^5=32"
         (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
         (ValInt 32)
+     , evalTest
+        "While loop "
+        (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Mul (Var "x") (CstInt 2)))
+        (ValInt 2)
       --
       -- -- Should work after task C.
       -- evalTest

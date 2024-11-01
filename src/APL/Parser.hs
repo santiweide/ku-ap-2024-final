@@ -123,6 +123,32 @@ pFExp = chain =<< pPorjExp
           pure x
         ]
 
+pForExp :: Parser Exp
+pForExp = do
+    lKeyword "loop"
+    p <- lVName
+    lString "="
+    pInit <- pExp
+    lKeyword "for"
+    i <- lVName
+    lString "<" 
+    bound <- pExp
+    lKeyword "do"
+    pBody <- pExp
+    pure $ ForLoop (p, pInit) (i, bound) pBody
+
+pWhileExp :: Parser Exp
+pWhileExp = do
+    lKeyword "loop"
+    p <- lVName
+    lString "="
+    pInit <- pExp
+    lKeyword "while"
+    cond <- pExp
+    lKeyword "do"
+    pBody <- pExp
+    pure $ WhileLoop (p, pInit) cond pBody
+
 pLExp :: Parser Exp
 pLExp =
   choice
@@ -137,29 +163,8 @@ pLExp =
         <$> (lKeyword "let" *> lVName)
         <*> (lString "=" *> pExp)
         <*> (lKeyword "in" *> pExp),
-      do
-        lKeyword "loop"
-        p <- lVName
-        lString "="
-        pInit <- pExp
-        lKeyword "for"
-        i <- lVName
-        lString "<" 
-        bound <- pExp
-        lKeyword "do"
-        pBody <- pExp
-        pure $ ForLoop (p, pInit) (i, bound) pBody,
-      -- ForLoop
-      --   <$> (lKeyword "loop" *> lVName)
-      --   <*> (lString "=" *> pExp)
-      --   <*> (lKeyword "for" *> lVName)
-      --   <*> (lString "<" *> pExp)
-      --   <*> (lKeyword "do" *> pExp),
-      -- WhileLoop
-      --   <$> (lKeyword "loop" *> lVName)
-      --   <*> (lString "=" *> pExp)
-      --   <*> (lKeyword "while" *> pExp)
-      --   <*> (lString "do" *> pExp),
+      try pForExp,
+      pWhileExp,
       pFExp
     ]
 

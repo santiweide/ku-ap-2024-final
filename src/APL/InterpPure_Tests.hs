@@ -72,8 +72,8 @@ tests =
         (ForLoop ("x", CstInt 1) ("i", CstInt 10) (Mul (Var "x") (CstInt 2)))
         (ValInt 1024)
      , evalTest
-        "For loop 2^5=32"
-        (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
+        "For loop 2^5=32, validating the p is not influcing the loop variable i"
+        (ForLoop ("x",CstInt 1) ("x",CstInt 5) (Mul (Var "x") (CstInt 2)))
         (ValInt 32)
      , evalTest
         "While loop "

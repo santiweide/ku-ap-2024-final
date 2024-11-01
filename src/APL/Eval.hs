@@ -81,7 +81,7 @@ eval (Project tupleExp index) = do
       in if idx >= 0 && idx < (length elements)
            then pure $ elements !! idx  
            else failure "index out of bounds"
-    _ -> failure "invalid tuple"
+    _ -> failure "invalid projection doing to a non-tuple!"
 
 -- eval (ForLoop initial var bound body) = do
 -- ForLoop (VName, Exp) (VName, Exp) Exp

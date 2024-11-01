@@ -34,10 +34,26 @@ tests =
         "(e1,e2)"
         (Tuple [CstInt 1, CstInt 2])
         (ValTuple [ValInt 1, ValInt 2])
+      -- tuple-eval-order is from left to right
       , evalTest
         "tuple eval order"
         (Tuple [KvPut (CstInt 1) (CstInt 2), KvGet (CstInt 1), KvPut (CstInt 1) (CstInt 3), KvGet (CstInt 1)])
         (ValTuple [ValInt 2,ValInt 2,ValInt 3,ValInt 3])
+      -- 
+      , evalTest
+        "Projection valid tuple and valid index"
+        (Project (Tuple [CstInt 1,CstInt 2,CstInt 3]) 2)
+        (ValInt 3)
+      -- It is an error to try to project an element from a non-tuple
+      , evalTestFail
+        "Projection to a non-tuple"
+        (Let "x" (CstBool True) (Project (Var "x") 0))
+      -- If x has N elements, then i must be between 0 and N − 1; 
+      -- using an index outside of this range is an error. 
+      , evalTestFail
+        "Projection out-of-range"
+        (Let "x" (Tuple [CstInt 1,CstInt 2,CstInt 3,CstInt 4]) (Project (Var "x") 100))
+
       --
       -- Should work after Task B.
       -- evalTest

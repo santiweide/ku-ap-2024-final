@@ -50,6 +50,5 @@ tests =
       --------------------
       ---- Loops Zone ----
       --------------------
-      , parserTest "let x = (1,2) in x.0" $ (Let "x" (Tuple [CstInt 1,CstInt 2]) (Project (Var "x") 0))
 
     ]

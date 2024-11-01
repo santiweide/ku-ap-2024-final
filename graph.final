@@ -1,49 +1,16 @@
+-- V0
 Atom ::= var
         |int
         |bool
-        |“(”Exp“)”
+        |"(" ")"
+        |"(" Exp ")"
+        |"(" Exp Exps ")"
+        | "put" Atom Atom
+        | "get" Atom
+        | Atom "." int
 
-FExp ::= Atom FExp'
-FExp' ::= (*empty*) 
-        | Atom FExp'
-
-LExp ::= FExp
-       | “if” Exp “then” Exp “else” Exp
-       | “\” var “->” Exp
-       | “try” Exp “catch” Exp
-       | “let” var “=” Exp “in” Exp
-
-Exp5 ::= LExp Exp5' -- making precedence between LExp and Exp5'
-
-Exp5' ::= (* empty *)
-       | “print” string Atom
-       | “get” Atom
-       | “put” Atom Atom
-
-Exp4 ::= Exp5 Exp4'
-
-Exp4' ::= “**” Exp5 Exp4'
-        | (* empty *)
-
-Exp3 ::= “*” Exp4 Exp3
-        | “/” Exp4 Exp3
-        | (* empty *)
-
-Exp2 ::= “+” Exp3 Exp2
-        | “-” Exp3 Exp2
-        | (* empty *)
-
-Exp1 ::= “==” Exp2 Exp1
-        | (* empty *)
-
-Exp ::= Exp4 Exp3 Exp2 Exp1
-
---- removing ambiguity:: as long as the exp has more than 2 sub expressions, there would be ambiguity
--- Ahhhhh finally corrected!!!!AHhhhhhhhhhhh
-Atom ::= var
-        |int
-        |bool
-        |“(”Exp“)”
+Exps ::= "," Exp
+        |"," Exp Exps
 
 FExp ::= Atom FExp'
 FExp' ::= (*empty*) 

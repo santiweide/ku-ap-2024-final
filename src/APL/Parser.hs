@@ -92,20 +92,33 @@ pAtom =
     [ CstInt <$> lInteger,
       CstBool <$> pBool,
       Var <$> lVName,
-      -- containing try $ lString "(" *> pExp <* lString ")",
+      -- contains try $ lString "(" *> pExp <* lString ")" 
+      -- in try parseParentheses
       try parseParentheses,
       lString "(" *> parseEmptyTuple <* lString ")",
       KvPut <$> (lKeyword "put" *> pAtom) <*> pAtom,
       KvGet <$> (lKeyword "get" *> pAtom)
     ]
 
+pPorjExp :: Parser Exp
+pPorjExp = chain =<< pAtom
+  where
+    chain x =
+      choice
+        [ do 
+            lString "."
+            y <- lInteger
+            chain $ Project x y, 
+          pure x
+        ]
+
 pFExp :: Parser Exp
-pFExp = chain =<< pAtom
+pFExp = chain =<< pPorjExp
   where
     chain x =
       choice
         [ do
-            y <- pAtom
+            y <- pPorjExp
             chain $ Apply x y,
           pure x
         ]
@@ -127,8 +140,8 @@ pLExp =
       pFExp
     ]
 
-pExp3 :: Parser Exp
-pExp3 = pLExp >>= chain
+pExp5 :: Parser Exp
+pExp5 = pLExp >>= chain
   where
     chain x =
       choice
@@ -143,52 +156,58 @@ pExp3 = pLExp >>= chain
           pure x
         ]
 
-pExp2 :: Parser Exp
-pExp2 = pExp3 >>= chain
+pExp4 :: Parser Exp
+pExp4 = pExp5 >>= chain
   where
     chain x =
       choice
         [ do
             lString "+"
-            y <- pExp3
+            y <- pExp5
             chain $ Add x y,
           do
             lString "-"
-            y <- pExp3
+            y <- pExp5
             chain $ Sub x y,
           pure x
         ]
 
-pExp15 :: Parser Exp
-pExp15 =  pExp2 >>= chain
-  where
-    chain x =
-      choice
-        [ 
-          do 
-            lString "."
-            y <- lInteger
-            chain $ Project x y,
-          do         -- TODO priority, BothOf and OneOf, which is higher?
-            lString "&&"
-            y <- pExp2
-            chain $ BothOf x y,
-          do         
-            lString "||"
-            y <- pExp2
-            chain $ OneOf x y,
-          pure x
-        ]
-
-pExp1 :: Parser Exp
-pExp1 = pExp15 >>= chain
+pExp3 :: Parser Exp
+pExp3 = pExp4 >>= chain
   where
     chain x =
       choice
         [ do
             lString "=="
-            y <- pExp2
+            y <- pExp4
             chain $ Eql x y,
+          pure x
+        ]
+
+
+pExp2 :: Parser Exp
+pExp2 =  pExp3 >>= chain
+  where
+    chain x =
+      choice
+        [ 
+          do 
+            lString "&&"
+            y <- pExp3
+            chain $ BothOf x y,
+          pure x
+        ]
+
+pExp1 :: Parser Exp
+pExp1 =  pExp2 >>= chain
+  where
+    chain x =
+      choice
+        [ 
+          do         
+            lString "||"
+            y <- pExp2
+            chain $ OneOf x y,
           pure x
         ]
 

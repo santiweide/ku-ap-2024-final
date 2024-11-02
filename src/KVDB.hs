@@ -116,9 +116,11 @@ handleMsg chan = do
 -- thread writes the desired key with 'kvPut', after which this
 -- function returns the now available value.
 kvGet :: KVDB k v -> k -> IO v
-kvGet (KVDB server) key = requestReply server (\replyChan -> Get key replyChan)
+kvGet (KVDB server) key = 
+  requestReply server (\replyChan -> Get key replyChan)
 
 -- | Write a key-value mapping to the database. Replaces any prior
 -- mapping of the key.
 kvPut :: KVDB k v -> k -> v -> IO ()
-kvPut (KVDB server) key value = sendTo server (Put key value)
+kvPut (KVDB server) key value = 
+  sendTo server (Put key value)

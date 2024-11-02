@@ -125,5 +125,4 @@ tests =
       , evalTestFail
         "e1 || e2 (both fails)"
         (OneOf (KvGet (CstInt 1)) (KvGet (CstInt 0)) )
-
     ]

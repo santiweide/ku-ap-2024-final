@@ -129,32 +129,16 @@ tests =
         (ValInt 32)
       --------------------------------------------
       --       Concurrency Test Simulation     --
-      --        OneOf with Lambda and Apply    -- TODO
+      --        OneOf with Lambda and Apply    -- 
       --------------------------------------------
-      , evalTest 
-        "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
-        (OneOf 
-            ( 
-              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
-            ) 
-            (
-              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
-            )
-        )
-        (ValInt 32)    
+      -- evaluating concurrently cannot change the fact that
+      --  the scope is not shared between environment. 
+      -- The variable scope is independent
+      , evalTestFail
+        "(\\x -> x*x*x) && x 2 "
+        (BothOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2)))
       --------------------------------------------
       --       Concurrency Test Simulation     --
-      --        OneOf with Put and Get         -- TODO
-      --------------------------------------------
-      , evalTest 
-        "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
-        (OneOf 
-            ( 
-              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
-            ) 
-            (
-              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
-            )
-        )
-        (ValInt 32)            
+      --        OneOf with Put and Get         -- 
+      -------------------------------------------- TODO provide some good case
   ]

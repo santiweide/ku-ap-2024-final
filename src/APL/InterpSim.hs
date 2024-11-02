@@ -7,9 +7,6 @@ type State = [(Val, Val)]
 stateInitial :: State
 stateInitial = []
 
-mergeStates :: State -> State -> State
-mergeStates s1 s2 = s1 ++ filter (\(k, _) -> notElem k (map fst s1)) s2
-
 -- | nextinue execution of the provided mutation as far as
 -- possible, but executing at most one 'StepOp' effect. Any nested
 -- mutations (in 'BothOp' and 'OneOfOp') must also be stepped
@@ -42,6 +39,7 @@ mergeStates s1 s2 = s1 ++ filter (\(k, _) -> notElem k (map fst s1)) s2
 step :: Env -> State -> EvalM a -> (EvalM a, State)
 step env state m = case m of
   Pure v -> (Pure v, state)
+  Free (ReadOp f) -> (f env, state)
   Free (ErrorOp err) -> (Free (ErrorOp err), state)
   Free (StepOp next) -> (next, state)
 
@@ -64,7 +62,7 @@ step env state m = case m of
     in case (e1', e2') of
          (Pure v1, _) -> (next v1, state1)
          (_, Pure v2) -> (next v2, state2)
-         (Free (ErrorOp err1), Free (ErrorOp err2)) -> (Free (ErrorOp err1), state)
+         (Free (ErrorOp err1), Free (ErrorOp _)) -> (Free (ErrorOp err1), state)
          _ -> (Free (OneOfOp e1' e2' next), state2)
 
   Free (KvPutOp key val next) -> (next, (key, val) : state)

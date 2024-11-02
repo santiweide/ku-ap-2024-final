@@ -61,7 +61,7 @@ eval (Apply e1 e2) = do
     (ValFun f_env var pBody, arg) ->  evalStep $ 
       localEnv (const $ envExtend var arg f_env) $ eval pBody
     (_, _) ->
-      failure "Cannot apply non-function"
+      evalStep $ failure "Cannot apply non-function"
 
 eval (KvPut key value) = do
     k <- eval key
@@ -109,7 +109,7 @@ eval (ForLoop (q, initial) (j, bound) pBody) = do
                     ValInt iCur | (ValInt iCur) < iBound -> do 
                       pVal' <- localEnv (envExtend p pVal) $ eval pBody
                       iVal' <- eval (Add (Var i) (CstInt 1))
-                      localEnv (envExtend i iVal') $ loop p pVal' i iBound
+                      localEnv (envExtend i iVal') $ evalStep $ loop p pVal' i iBound
                     _ -> pure pVal
     _ -> failure "[ForLoop]bound should be evaled to a ValInt"
 
@@ -125,7 +125,7 @@ eval (WhileLoop (q, initial) cond pBody) = do
             ValBool True -> do
               localEnv (envExtend p pVal) $ do
                 pVal' <- eval pBody
-                loop p pVal' 
+                evalStep $ loop p pVal' 
             ValBool False -> pure pVal 
             _ -> failure "Condition must evaluate to a boolean"
 

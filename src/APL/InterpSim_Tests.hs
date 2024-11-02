@@ -62,6 +62,11 @@ tests =
       -- Concurrency Test Simulation --
       --           OneOf             --
       ---------------------------------
+      -- simple ||
+      , evalTest 
+        " (1+2) || (3+4+5+6)"
+        (OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6)))
+        (ValInt 3)
       -- eval order: e1 -> e2, so e1 is the "First one to finish"
       , evalTest
         "(put 0 42 || put 0 1337) -> 42"
@@ -77,14 +82,79 @@ tests =
         "(1 || loop x = 1 while x == 1 do x) -> 1"
         (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
         (ValInt 1)
+      ----------------------------------------------
+      --       Concurrency Test Simulation        --
+      --  OneOf infinite loops and finite loop    --
+      ----------------------------------------------
       -- (infinite loop || e2) -> e2 
       , evalTest 
         "((loop x = 1 while x == 1 do x) || 2) -> 2"
         (OneOf (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")) (CstInt 2))
         (ValInt 2)
-      -- simple ||
+      -- (finite loop || finite loop) -> finite loop 
       , evalTest 
-        " (1+2) || (3+4+5+6)"
-        (OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6)))
-        (ValInt 3)
-    ]
+        "((loop x = 1 while x == 1 do x) || (loop x = 1 for i < 5 do x * 2)) -> 32"
+        (OneOf 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
+            )
+            ( 
+              ForLoop ("x",CstInt 1) ("i",CstInt 10) (Mul (Var "x") (CstInt 2))
+            ) 
+        )
+        (ValInt 32)
+      -- (infinite loop || finite loop) -> finite loop 
+      , evalTest 
+        "((loop x = 1 while x == 1 do x) || (loop x = 1 for i < 5 do x * 2)) -> 32"
+        (OneOf 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
+            )
+            ( 
+              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
+            ) 
+        )
+        (ValInt 32)
+      -- (finite loop || infinite loop) -> finite loop 
+      , evalTest 
+        "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
+        (OneOf 
+            ( 
+              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
+            ) 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
+            )
+        )
+        (ValInt 32)
+      --------------------------------------------
+      --       Concurrency Test Simulation     --
+      --        OneOf with Lambda and Apply    -- TODO
+      --------------------------------------------
+      , evalTest 
+        "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
+        (OneOf 
+            ( 
+              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
+            ) 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
+            )
+        )
+        (ValInt 32)    
+      --------------------------------------------
+      --       Concurrency Test Simulation     --
+      --        OneOf with Put and Get         -- TODO
+      --------------------------------------------
+      , evalTest 
+        "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
+        (OneOf 
+            ( 
+              WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")
+            ) 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
+            )
+        )
+        (ValInt 32)            
+  ]

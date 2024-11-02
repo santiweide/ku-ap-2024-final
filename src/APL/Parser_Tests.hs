@@ -54,7 +54,7 @@ tests =
       , parserTest "loop x = 1 for i < 5 do x * 2" $ (ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2)))
       -- normal while loop
       , parserTest "loop x = 1 while x == 1 do x" $ (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))
-      -- normal while mix for loop
+      -- while mix for loop
       , parserTest "loop x = (1,10) while if (x.1 == 0) then false else true do (x.0*2,x.1-1)" $ WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)])
       ------------------------
       ---- && and || ----
@@ -70,8 +70,11 @@ tests =
       -- && is left associated, Porjection is higer prioritied than BothOf
       , parserTest "get 0 && put 0 42 && put 0 1337 .0" $ BothOf (BothOf (KvGet (CstInt 0)) (KvPut (CstInt 0) (CstInt 42))) (Project (KvPut (CstInt 0) (CstInt 1337)) 0)
       , parserTest "(1 || loop x = 1 while x == 1 do x)" $ OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))
-      -- there use parentheses to differ pExp bound in while-loop
+      -- priority && < while-loop
       , parserTest "(loop x = 1 while x == 1 do x) || 1" $ OneOf (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")) (CstInt 1)
       , parserTest "loop x = 1 while x == 1 do x || 1" $ WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (OneOf (Var "x") (CstInt 1))
       , parserTest "(loop x = 1 while x == 1 do x ,1,2,3)" $ Tuple [WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"),CstInt 1,CstInt 2,CstInt 3]
+      -- priority && < Lambda 
+      , parserTest "\\x -> x*x*x && x 2 " $ Lambda "x" (BothOf (Mul (Mul (Var "x") (Var "x")) (Var "x")) (Apply (Var "x") (CstInt 2)))
+      , parserTest "(\\x -> x*x*x) && x 2 " $ BothOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2))
     ]

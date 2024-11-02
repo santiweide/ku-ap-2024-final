@@ -61,8 +61,17 @@ tests =
       ------------------------
       , parserTest "(1+2)||(3+4+5+6)" $ OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6))
       , parserTest "(1+2) && (3+4)" $ BothOf (Add (CstInt 1) (CstInt 2)) (Add (CstInt 3) (CstInt 4))
-      -- priority && > || -- has parentheses, then BothOf stands
+      -- priority || < && -- has parentheses, then BothOf stands
       , parserTest "(1*10 || 2-20) && (3+4)" $ BothOf (OneOf (Mul (CstInt 1) (CstInt 10)) (Sub (CstInt 2) (CstInt 20))) (Add (CstInt 3) (CstInt 4))
-      -- priority && > || -- no parentheses, then OneOf
+      -- priority || < && -- no parentheses, then OneOf
       , parserTest "1*10 || 2-20 && 3+4" $ OneOf (Mul (CstInt 1) (CstInt 10)) (BothOf (Sub (CstInt 2) (CstInt 20)) (Add (CstInt 3) (CstInt 4)))
+      -- priority && < || < project
+      , parserTest "(get 0 && (put 0 42 && put 0 1337)) .0" $ Project (BothOf (KvGet (CstInt 0)) (BothOf (KvPut (CstInt 0) (CstInt 42)) (KvPut (CstInt 0) (CstInt 1337)))) 0
+      -- && is left associated, Porjection is higer prioritied than BothOf
+      , parserTest "get 0 && put 0 42 && put 0 1337 .0" $ BothOf (BothOf (KvGet (CstInt 0)) (KvPut (CstInt 0) (CstInt 42))) (Project (KvPut (CstInt 0) (CstInt 1337)) 0)
+      , parserTest "(1 || loop x = 1 while x == 1 do x)" $ OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))
+      -- there use parentheses to differ pExp bound in while-loop
+      , parserTest "(loop x = 1 while x == 1 do x) || 1" $ OneOf (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")) (CstInt 1)
+      , parserTest "loop x = 1 while x == 1 do x || 1" $ WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (OneOf (Var "x") (CstInt 1))
+      , parserTest "(loop x = 1 while x == 1 do x ,1,2,3)" $ Tuple [WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"),CstInt 1,CstInt 2,CstInt 3]
     ]

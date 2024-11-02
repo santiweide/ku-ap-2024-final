@@ -99,14 +99,14 @@ eval (ForLoop (q, initial) (j, bound) pBody) = do
   case valBound of 
     ValInt vBound -> do 
         localEnv (envExtend j (ValInt 0)) $ 
-          loop q pInit j (ValInt vBound)
+          evalStep $ loop q pInit j (ValInt vBound)
             where 
               loop :: VName -> Val -> VName -> Val -> EvalM Val
               loop p pVal i iBound = do 
                   iVal <- eval (Var i)
                   case iVal of
                     -- ValInt in Val is deriving Ord, so we can make cmp directly.
-                    ValInt iCur | (ValInt iCur) < iBound -> evalStep $ do 
+                    ValInt iCur | (ValInt iCur) < iBound -> do 
                       pVal' <- localEnv (envExtend p pVal) $ eval pBody
                       iVal' <- eval (Add (Var i) (CstInt 1))
                       localEnv (envExtend i iVal') $ loop p pVal' i iBound
@@ -116,13 +116,13 @@ eval (ForLoop (q, initial) (j, bound) pBody) = do
 -- p is in scope when evaluating cond,
 eval (WhileLoop (q, initial) cond pBody) = do
   pInit <- eval initial 
-  loop q pInit
+  evalStep $ loop q pInit
     where 
       loop :: VName -> Val -> EvalM Val
       loop p pVal = do 
           cVal <- localEnv (envExtend p pVal) $ eval cond
           case cVal of 
-            ValBool True -> evalStep $ do
+            ValBool True -> do
               localEnv (envExtend p pVal) $ do
                 pVal' <- eval pBody
                 loop p pVal' 

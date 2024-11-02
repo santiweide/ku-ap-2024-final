@@ -115,10 +115,10 @@ handleMsg chan = do
 -- not exist in the store, then this function blocks until another
 -- thread writes the desired key with 'kvPut', after which this
 -- function returns the now available value.
-kvGet :: (Ord k) => KVDB k v -> k -> IO v
+kvGet :: KVDB k v -> k -> IO v
 kvGet (KVDB server) key = requestReply server (\replyChan -> Get key replyChan)
 
 -- | Write a key-value mapping to the database. Replaces any prior
 -- mapping of the key.
-kvPut :: (Ord k) => KVDB k v -> k -> v -> IO ()
+kvPut :: KVDB k v -> k -> v -> IO ()
 kvPut (KVDB server) key value = sendTo server (Put key value)

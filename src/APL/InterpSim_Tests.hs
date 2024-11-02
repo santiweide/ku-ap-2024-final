@@ -20,6 +20,7 @@ evalTestFail desc e =
         assertFailure $
           "Expected error but received this value:\n" ++ show v
 
+-- TODO check coverage
 tests :: TestTree
 tests =
   testGroup
@@ -27,7 +28,7 @@ tests =
     [
       ---------------------------------
       -- Concurrency Test Simulation --
-      --           BothOf            --
+      --   BothOf with Put and Get   --
       ---------------------------------
       -- simple &&
       evalTest 
@@ -60,7 +61,7 @@ tests =
         (ValInt 1337)
       ---------------------------------
       -- Concurrency Test Simulation --
-      --           OneOf             --
+      --    OneOf with Put and Get   --
       ---------------------------------
       -- simple ||
       , evalTest 
@@ -129,7 +130,7 @@ tests =
         (ValInt 32)
       --------------------------------------------
       --       Concurrency Test Simulation     --
-      --        OneOf with Lambda and Apply    -- 
+      --         with Lambda and Apply         -- 
       --------------------------------------------
       -- evaluating concurrently cannot change the fact that
       --  the scope is not shared between environment. 
@@ -137,8 +138,18 @@ tests =
       , evalTestFail
         "(\\x -> x*x*x) && x 2 "
         (BothOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2)))
-      --------------------------------------------
-      --       Concurrency Test Simulation     --
-      --        OneOf with Put and Get         -- 
-      -------------------------------------------- TODO provide some good case
+      -- we should use let to pass var in env
+      , evalTest
+        "(\\x -> x*x*x) && let x = (\\x -> x*x*x) in x 2 "
+        (BothOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Let "x" (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2))))
+        (ValTuple [ValFun [] "x" (Mul (Mul (Var "x") (Var "x")) (Var "x")),ValInt 8])
+      , evalTest
+        "(\\x -> x*x*x) || let x = (\\x -> x*x*x) in x 2 "
+        (OneOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Let "x" (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2))))
+        (ValFun [] "x" (Mul (Mul (Var "x") (Var "x")) (Var "x")))
+      , evalTest
+        "(\\x -> x*x*x) || x 2 "
+        (OneOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2)))
+        (ValFun [] "x" (Mul (Mul (Var "x") (Var "x")) (Var "x")))
   ]
+ 

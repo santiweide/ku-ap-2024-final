@@ -83,8 +83,13 @@ tests =
       --  OneOf infinite loops and finite loop    --
       ----------------------------------------------
       -- (e1 || infinite loop) -> e1 
-      , evalTest 
+      , evalTest
         "(1 || loop x = 1 while x == 1 do x) -> 1"
+        (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")))
+        (ValInt 1)
+      -- (get lock stuck || e1) -> e1
+      , evalTest 
+        "(get 0 || (1 || loop x = 1 while x == 1 do x)) -> 1"
         (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
         (ValInt 1)
       -- (infinite loop || e2) -> e2 

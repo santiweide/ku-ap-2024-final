@@ -97,13 +97,18 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
     ((jobId, Done), Just (Left err), _) -> pure $ Left $ "First job " ++ show jobId ++ " encountered error: " ++ err
     ((jobId, Done), _, Just (Left err)) -> pure $ Left $ "Second job " ++ show jobId ++ " encountered error: " ++ err
     -- Timeout cases, should continue to find out about the other job
-    ((jobid, DoneTimeout), _, _) -> pure $ Left $ show jobid ++ " timed out in OneOfOp"
+    ((jobId, DoneTimeout), _, _) -> pure $ Left $ show jobId ++ " timed out in OneOfOp"
     -- Cancellation cases
-    ((jobid, DoneCancelled), _, _) -> pure $ Left $ show jobid ++ " was cancelled in OneOfOp"
+    ((jobId, DoneCancelled), _, _) -> pure $ Left $ show jobId ++ " was cancelled in OneOfOp"
     -- Crashes
-    ((jobid, DoneCrashed), _, _) -> pure $ Left $ show jobid ++ " crashed in OneOfOp"
+    ((jobId, DoneCrashed), _, _) -> pure $ Left $ show jobId ++ " crashed in OneOfOp"
     -- Fallback case
-    _ -> pure $ Left "Both operations failed or were incomplete in OneOfOp"
+    ((jobId, _), _, _ ) -> do 
+      res <- jobStatus spc $ jobId
+      res1 <- jobStatus spc $ jobId1
+      res2 <- jobStatus spc $ jobId2
+      pure $ Left $ show res ++ " jobid1 " ++ show res1 ++ " jobid2 " ++show res2
+    
 
 -- Handle the KvGetOp by converting `Val` to `k` type for lookup
 runEvalM spc kvdb env (Free (KvGetOp key cont)) = do

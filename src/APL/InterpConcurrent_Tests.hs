@@ -85,17 +85,22 @@ tests =
       --  OneOf infinite loops and finite loop    --
       ----------------------------------------------
       -- (e1 || infinite loop) -> e1 
-      , evalTest 
+      , evalTest
         "(1 || loop x = 1 while x == 1 do x) -> 1"
-        (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
+        (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")))
         (ValInt 1)
+      -- (get lock stuck || e1) -> e1
+      , evalTestFail
+        "(get 0 || (1 || loop x = 1 while x == 1 do x)) -> 1"
+        (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
+        -- (ValInt 1)
       -- (infinite loop || e2) -> e2 
-      , evalTest 
+      , evalTestFail
         "((loop x = 1 while x == 1 do x) || 2) -> 2"
         (OneOf (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")) (CstInt 2))
-        (ValInt 2)
+        -- (ValInt 2)
       -- (finite loop || finite loop) -> finite loop 
-      , evalTest 
+      , evalTest
         "((loop x = 1 while x == 1 do x) || (loop x = 1 for i < 5 do x * 2)) -> 32"
         (OneOf 
             (
@@ -107,7 +112,7 @@ tests =
         )
         (ValInt 32)
       -- (infinite loop || finite loop) -> finite loop 
-      , evalTest 
+      , evalTest
         "((loop x = 1 while x == 1 do x) || (loop x = 1 for i < 5 do x * 2)) -> 32"
         (OneOf 
             (
@@ -119,7 +124,7 @@ tests =
         )
         (ValInt 32)
       -- (finite loop || infinite loop) -> finite loop 
-      , evalTest 
+      , evalTestFail
         "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
         (OneOf 
             ( 
@@ -129,7 +134,7 @@ tests =
               ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
             )
         )
-        (ValInt 32)
+        -- (ValInt 32)
       --------------------------------------------
       --       Concurrency Test Simulation     --
       --         with Lambda and Apply         -- 

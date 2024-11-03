@@ -112,6 +112,15 @@ tests =
         "e1 || e2 -> e1 in pure"
         (OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6)))
         (ValInt 3)
+      -- BothOf eval order :: e1, e2 = e1 -> e2
+      , evalTest 
+        "(put 0 10 && put 1 10) && get 1)).0"
+        (Project (BothOf (BothOf (KvPut (CstInt 0) (CstInt 10)) (KvPut (CstInt 1) (CstInt 10))) (KvGet (CstInt 1))) 0)
+        (ValTuple [ValInt 10,ValInt 10])
+      , evalTest 
+        "(put 0 10 && put 1 10) && get 1)).1"
+        (Project (BothOf (BothOf (KvPut (CstInt 0) (CstInt 10)) (KvPut (CstInt 1) (CstInt 10))) (KvGet (CstInt 1))) 1)
+        (ValInt 10)
       --
       -- Should work after task C.
       , evalTest

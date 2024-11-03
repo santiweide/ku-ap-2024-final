@@ -56,11 +56,15 @@ tests =
         "(put 0 42 && put 0 1337).0 -> 42"
         (Project (BothOf (KvPut (CstInt 0) (CstInt 42)) (KvPut (CstInt 0) (CstInt 1337))) 0)
         (ValInt 42)
-      -- cannot some how guarantee the order in this case... need to be more designed on 
-      -- , evalTest 
-      --   "(get 0 && (put 0 42 && put 0 1337)).0 -> 1337"
-      --   (Project (BothOf (KvGet (CstInt 0)) (BothOf (KvPut (CstInt 0) (CstInt 42)) (KvPut (CstInt 0) (CstInt 1337)))) 0)
-      --   (ValInt 1337)
+      -- concurrency and guarantee the order
+      , evalTest 
+        "(put 0 10 && ((let i = (get 0) in put 1 i) && get 1)).0"
+        (Project (BothOf (KvPut (CstInt 0) (CstInt 10)) (BothOf (Let "i" (KvGet (CstInt 0)) (KvPut (CstInt 1) (Var "i"))) (KvGet (CstInt 1)))) 0)
+        (ValInt 10)
+      , evalTest 
+        "(put 0 10 && ((let i = (get 0) in put 1 i) && get 1)).1"
+        (Project (BothOf (KvPut (CstInt 0) (CstInt 10)) (BothOf (Let "i" (KvGet (CstInt 0)) (KvPut (CstInt 1) (Var "i"))) (KvGet (CstInt 1)))) 1)
+        (ValTuple [ValInt 10,ValInt 10])
       ---------------------------------------
       -- Concurrency Test Real Concurrency --
       --    OneOf with Put and Get   --

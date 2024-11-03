@@ -80,4 +80,7 @@ tests =
       -- priority || < get 
       , parserTest "(get 0 || (1 || loop x = 1 while x == 1 do x))" $ (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
       , parserTest "((1 || loop x = 1 while x == 1 do x) || get 0)" $ (OneOf (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))) (KvGet (CstInt 0)))
+      -- priority && < let 
+      , parserTest "(put 0 10 && ((let i = get 0 in put 1 i) && get 1)).0" $ (Project (BothOf (KvPut (CstInt 0) (CstInt 10)) (BothOf (Let "i" (KvGet (CstInt 0)) (KvPut (CstInt 1) (Var "i"))) (KvGet (CstInt 1)))) 0)
+
     ]

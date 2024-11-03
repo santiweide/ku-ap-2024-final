@@ -77,4 +77,7 @@ tests =
       -- priority && < Lambda 
       , parserTest "\\x -> x*x*x && x 2 " $ Lambda "x" (BothOf (Mul (Mul (Var "x") (Var "x")) (Var "x")) (Apply (Var "x") (CstInt 2)))
       , parserTest "(\\x -> x*x*x) && x 2 " $ BothOf (Lambda "x" (Mul (Mul (Var "x") (Var "x")) (Var "x"))) (Apply (Var "x") (CstInt 2))
+      -- priority || < get 
+      , parserTest "(get 0 || (1 || loop x = 1 while x == 1 do x))" $ (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
+      , parserTest "((1 || loop x = 1 while x == 1 do x) || get 0)" $ (OneOf (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))) (KvGet (CstInt 0)))
     ]

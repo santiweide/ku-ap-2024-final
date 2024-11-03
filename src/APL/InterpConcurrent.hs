@@ -84,9 +84,7 @@ runEvalM spc kvdb env (Free (BothOfOp op1 op2 cont)) = do
     ((job1, DoneCrashed), (job2, DoneCancelled)) ->
       pure $ Left $ show job2 ++ " was cancelled and " ++ show job1 ++ " crashed in BothOfOp"
 
--- TODO what about the other job? 
--- wait for its done or just leave the runEvalM?
--- or just cancel it...?
+-- Cancel the other job when our job is finished.
 runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
   result1Ref <- newIORef Nothing
   result2Ref <- newIORef Nothing
@@ -96,7 +94,6 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
   result1 <- readIORef result1Ref
   result2 <- readIORef result2Ref
   case (jobDone) of
----- job2 finishes first
     (jobId, Done) -> do 
       if jobId == jobId1 
         then jobCancel spc $ jobId2
@@ -138,28 +135,10 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
         (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
         (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
 
-    -- ((jobId, Done), Just (Left err), _) -> 
-    -- ((jobId, Done), _, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
-    -- -- Timeout cases, should continue to find out about the other job
-    -- ((jobId, DoneTimeout), _, _) -> pure $ Left $ show jobId ++ " timed out in OneOfOp"
-    -- -- Cancellation cases
-    -- ((jobId, DoneCancelled), _, _) -> pure $ Left $ show jobId ++ " was cancelled in OneOfOp"
-    -- -- Crashes
-    -- ((jobId, DoneCrashed), _, _) -> pure $ Left $ show jobId ++ " crashed in OneOfOp"
-    -- -- Fallback case
-    -- ((jobId, _), _, _ ) -> do 
-    --   res <- jobStatus spc $ jobId
-    --   res1 <- jobStatus spc $ jobId1
-    --   res2 <- jobStatus spc $ jobId2
-    --   pure $ Left $ show res ++ " jobid1 " ++ show res1 ++ " jobid2 " ++show res2
-    
-
--- Handle the KvGetOp by converting `Val` to `k` type for lookup
 runEvalM spc kvdb env (Free (KvGetOp key cont)) = do
     result <- kvGet kvdb key
     runEvalM spc kvdb env (cont result)
 
--- Handle the KvPutOp by converting `Val` to `k` and `v` for storing
 runEvalM spc kvdb env (Free (KvPutOp key val next)) = do
     kvPut kvdb key val
     runEvalM spc kvdb env next

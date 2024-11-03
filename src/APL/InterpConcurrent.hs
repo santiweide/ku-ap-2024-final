@@ -84,6 +84,9 @@ runEvalM spc kvdb env (Free (BothOfOp op1 op2 cont)) = do
     ((job1, DoneCrashed), (job2, DoneCancelled)) ->
       pure $ Left $ show job2 ++ " was cancelled and " ++ show job1 ++ " crashed in BothOfOp"
 
+-- TODO what about the other job? 
+-- wait for its done or just leave the runEvalM?
+-- or just cancel it...?
 runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
   result1Ref <- newIORef Nothing
   result2Ref <- newIORef Nothing
@@ -92,22 +95,63 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
   jobDone <- jobWaitAny spc [jobId1, jobId2]
   result1 <- readIORef result1Ref
   result2 <- readIORef result2Ref
-  case (jobDone, result1, result2) of
-    ((_, Done), Just (Right val), _) -> runEvalM spc kvdb env (cont val)
-    ((jobId, Done), Just (Left err), _) -> pure $ Left $ "First job " ++ show jobId ++ " encountered error: " ++ err
-    ((jobId, Done), _, Just (Left err)) -> pure $ Left $ "Second job " ++ show jobId ++ " encountered error: " ++ err
-    -- Timeout cases, should continue to find out about the other job
-    ((jobId, DoneTimeout), _, _) -> pure $ Left $ show jobId ++ " timed out in OneOfOp"
-    -- Cancellation cases
-    ((jobId, DoneCancelled), _, _) -> pure $ Left $ show jobId ++ " was cancelled in OneOfOp"
-    -- Crashes
-    ((jobId, DoneCrashed), _, _) -> pure $ Left $ show jobId ++ " crashed in OneOfOp"
-    -- Fallback case
-    ((jobId, _), _, _ ) -> do 
-      res <- jobStatus spc $ jobId
-      res1 <- jobStatus spc $ jobId1
-      res2 <- jobStatus spc $ jobId2
-      pure $ Left $ show res ++ " jobid1 " ++ show res1 ++ " jobid2 " ++show res2
+  case (jobDone) of
+---- job2 finishes first
+    (jobId, Done) -> do 
+      if jobId == jobId1 
+        then jobCancel spc $ jobId2
+        else jobCancel spc $ jobId1
+      case (result1, result2) of
+        (Just (Right val), _) -> runEvalM spc kvdb env (cont val)
+        (_, Just (Right val)) -> runEvalM spc kvdb env (cont val)
+        (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
+    (jobId, DoneTimeout) -> do 
+      if jobId == jobId1 
+        then jobCancel spc $ jobId2
+        else jobCancel spc $ jobId1      
+      case (result1, result2) of
+        (Just (Right val), _) -> runEvalM spc kvdb env (cont val)
+        (_, Just (Right val)) -> runEvalM spc kvdb env (cont val)
+        (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
+    (jobId, DoneCancelled) -> do 
+      if jobId == jobId1 
+        then jobCancel spc $ jobId2
+        else jobCancel spc $ jobId1
+      case (result1, result2) of
+        (Just (Right val), _) -> runEvalM spc kvdb env (cont val)
+        (_, Just (Right val)) -> runEvalM spc kvdb env (cont val)
+        (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
+    (jobId, DoneCrashed) -> do 
+      if jobId == jobId1 
+        then jobCancel spc $ jobId2
+        else jobCancel spc $ jobId1
+      case (result1, result2) of
+        (Just (Right val), _) -> runEvalM spc kvdb env (cont val)
+        (_, Just (Right val)) -> runEvalM spc kvdb env (cont val)
+        (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+        (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
+
+    -- ((jobId, Done), Just (Left err), _) -> 
+    -- ((jobId, Done), _, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
+    -- -- Timeout cases, should continue to find out about the other job
+    -- ((jobId, DoneTimeout), _, _) -> pure $ Left $ show jobId ++ " timed out in OneOfOp"
+    -- -- Cancellation cases
+    -- ((jobId, DoneCancelled), _, _) -> pure $ Left $ show jobId ++ " was cancelled in OneOfOp"
+    -- -- Crashes
+    -- ((jobId, DoneCrashed), _, _) -> pure $ Left $ show jobId ++ " crashed in OneOfOp"
+    -- -- Fallback case
+    -- ((jobId, _), _, _ ) -> do 
+    --   res <- jobStatus spc $ jobId
+    --   res1 <- jobStatus spc $ jobId1
+    --   res2 <- jobStatus spc $ jobId2
+    --   pure $ Left $ show res ++ " jobid1 " ++ show res1 ++ " jobid2 " ++show res2
     
 
 -- Handle the KvGetOp by converting `Val` to `k` type for lookup

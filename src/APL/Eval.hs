@@ -6,6 +6,8 @@ where
 import APL.AST (Exp (..), VName)
 import APL.Monad
 
+-- import Debug.Trace
+
 evalIntBinOp :: (Integer -> Integer -> EvalM Integer) -> Exp -> Exp -> EvalM Val
 evalIntBinOp f e1 e2 = do
   v1 <- eval e1
@@ -120,6 +122,7 @@ eval (WhileLoop (q, initial) cond pBody) = do
     where 
       loop :: VName -> Val -> EvalM Val
       loop p pVal = do 
+          -- traceM ("inside while")
           cVal <- localEnv (envExtend p pVal) $ eval cond
           case cVal of 
             ValBool True -> do

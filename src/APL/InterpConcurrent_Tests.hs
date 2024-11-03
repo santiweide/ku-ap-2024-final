@@ -85,11 +85,11 @@ tests =
         "((1 || loop x = 1 while x == 1 do x) || get 0)"
         (OneOf (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))) (KvGet (CstInt 0)))
         (ValInt 1)
-      -- (get lock stuck || e1) -> e1 TODO fix 
-      , evalTestFail
+      -- (get lock stuck || e1) -> e1 
+      , evalTest
         "(get 0 || (1 || loop x = 1 while x == 1 do x)) -> 1"
         (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
-        -- (ValInt 1)
+        (ValInt 1)
       ----------------------------------------------
       --       Concurrency Test Simulation        --
       --  OneOf infinite loops and finite loop    --
@@ -99,11 +99,11 @@ tests =
         "(1 || loop x = 1 while x == 1 do x) -> 1"
         (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")))
         (ValInt 1)
-      -- (infinite loop || e2) -> e2 TODO fix 
-      , evalTestFail
+      -- (infinite loop || e2) -> e2
+      , evalTest
         "((loop x = 1 while x == 1 do x) || 2) -> 2"
         (OneOf (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x")) (CstInt 2))
-        -- (ValInt 2)
+        (ValInt 2)
       -- (finite loop || finite loop) -> finite loop 
       , evalTest
         "((loop x = 1 while x == 1 do x) || (loop x = 1 for i < 5 do x * 2)) -> 32"
@@ -128,8 +128,8 @@ tests =
             ) 
         )
         (ValInt 32)
-      -- (finite loop || infinite loop) -> finite loop  TODO fix 
-      , evalTestFail
+      -- (finite loop || infinite loop) -> finite loop 
+      , evalTest
         "( (loop x = 1 for i < 5 do x * 2) || (loop x = 1 while x == 1 do x) ) -> 32"
         (OneOf 
             ( 
@@ -139,7 +139,7 @@ tests =
               ForLoop ("x",CstInt 1) ("i",CstInt 5) (Mul (Var "x") (CstInt 2))
             )
         )
-        -- (ValInt 32)
+        (ValInt 32)
       --------------------------------------------
       --       Concurrency Test Simulation     --
       --         with Lambda and Apply         -- 

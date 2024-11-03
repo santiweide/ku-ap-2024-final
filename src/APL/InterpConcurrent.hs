@@ -93,16 +93,30 @@ runEvalM spc kvdb (Free (OneOfOp op1 op2 cont)) = do
   result2Ref <- newIORef Nothing
   jobId1 <- jobAdd spc $ Job $ void $ runEvalM spc kvdb op1 >>= writeIORef result1Ref . Just
   jobId2 <- jobAdd spc $ Job $ void $ runEvalM spc kvdb op2 >>= writeIORef result2Ref . Just
-   -- Wait for either job to complete
-  _ <- jobWaitAny spc [jobId1, jobId2] 
+  jobDone <- jobWaitAny spc [jobId1, jobId2]
   result1 <- readIORef result1Ref
   result2 <- readIORef result2Ref
-  case (result1, result2) of
-    (Just (Right val), _) -> runEvalM spc kvdb (cont val)
-    (_, Just (Right val)) -> runEvalM spc kvdb (cont val)
-    (Just (Left err), _) -> pure $ Left err
-    (_, Just (Left err)) -> pure $ Left err
-    _ -> pure $ Left "Both operations failed in OneOfOp"
+  case (jobDone, result1, result2) of
+    -- Case where the first job completes successfully
+    ((job1, Done), Just (Right val), _) -> runEvalM spc kvdb (cont val)
+    -- Case where the second job completes successfully
+    ((job2, Done), _, Just (Right val)) -> runEvalM spc kvdb (cont val)
+    -- Error handling for jobs
+    ((job1, Done), Just (Left err), _) -> pure $ Left $ "First job " ++ show job1 ++ " encountered error: " ++ err
+    -- Error handling for second job
+    ((job2, Done), _, Just (Left err)) -> pure $ Left $ "Second job " ++ show job2 ++ " encountered error: " ++ err
+    -- Timeout cases
+    ((job1, DoneTimeout), _, _) -> pure $ Left $ show job1 ++ " timed out in OneOfOp"
+    ((job2, DoneTimeout), _, _) -> pure $ Left $ show job2 ++ " timed out in OneOfOp"
+    -- Cancellation cases
+    ((job1, DoneCancelled), _, _) -> pure $ Left $ show job1 ++ " was cancelled in OneOfOp"
+    ((job2, DoneCancelled), _, _) -> pure $ Left $ show job2 ++ " was cancelled in OneOfOp"
+    -- Crashes
+    ((job1, DoneCrashed), _, _) -> pure $ Left $ show job1 ++ " crashed in OneOfOp"
+    ((job2, DoneCrashed), _, _) -> pure $ Left $ show job2 ++ " crashed in OneOfOp"
+    -- Fallback case
+    _ -> pure $ Left "Both operations failed or were incomplete in OneOfOp"
+
 
 -- Handle the KvGetOp by converting `Val` to `k` type for lookup
 runEvalM spc kvdb (Free (KvGetOp key cont)) = do

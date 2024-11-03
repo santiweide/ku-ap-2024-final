@@ -28,7 +28,7 @@ tests =
     [
       ---------------------------------
       -- Concurrency Test Simulation --
-      --   BothOf with Put and Get   --
+      --   BothOf  --
       ---------------------------------
       -- simple &&
       evalTest 

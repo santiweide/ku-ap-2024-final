@@ -34,6 +34,8 @@ runEval = fmap fst $ runEval' envEmpty stateInitial
             (Left err, _) -> (Left err, s)
         (Left err, _) -> (Left err, s)
 
+    -- since it returns the calculation that finishes first, 
+    -- one will not use the result of the other.
     runEval' r s (Free (OneOfOp e1 e2 m)) = 
       let res1 = runEval' r s e1
           res2 = runEval' r s e2

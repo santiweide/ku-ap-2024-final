@@ -78,15 +78,15 @@ tests =
         "(get 0 || (put 0 42 || put 0 1337)) -> 42"
         (OneOf (KvGet (CstInt 0)) (OneOf (KvPut (CstInt 0) (CstInt 42)) (KvPut (CstInt 0) (CstInt 1337))))
         (ValInt 42)
+      ----------------------------------------------
+      --       Concurrency Test Simulation        --
+      --  OneOf infinite loops and finite loop    --
+      ----------------------------------------------
       -- (e1 || infinite loop) -> e1 
       , evalTest 
         "(1 || loop x = 1 while x == 1 do x) -> 1"
         (OneOf (KvGet (CstInt 0)) (OneOf (CstInt 1) (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))))
         (ValInt 1)
-      ----------------------------------------------
-      --       Concurrency Test Simulation        --
-      --  OneOf infinite loops and finite loop    --
-      ----------------------------------------------
       -- (infinite loop || e2) -> e2 
       , evalTest 
         "((loop x = 1 while x == 1 do x) || 2) -> 2"

@@ -18,6 +18,7 @@ runEval expr = do
 -- specify the key and value type to Val
 runEvalM :: SPC -> KVDB Val Val -> Env -> EvalM a -> IO (Either Error a)
 runEvalM _ _ _ (Pure result) = pure $ Right result
+runEvalM _ _ _ (Free (ErrorOp e)) = pure $ Left e
 runEvalM spc kvdb env (Free (ReadOp cont)) = do
   runEvalM spc kvdb env $ cont $ env 
 
@@ -92,23 +93,15 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
   result1 <- readIORef result1Ref
   result2 <- readIORef result2Ref
   case (jobDone, result1, result2) of
-    -- Case where the first job completes successfully
-    ((job1, Done), Just (Right val), _) -> runEvalM spc kvdb env (cont val)
-    -- Case where the second job completes successfully
-    ((job2, Done), _, Just (Right val)) -> runEvalM spc kvdb env (cont val)
-    -- Error handling for jobs
-    ((job1, Done), Just (Left err), _) -> pure $ Left $ "First job " ++ show job1 ++ " encountered error: " ++ err
-    -- Error handling for second job
-    ((job2, Done), _, Just (Left err)) -> pure $ Left $ "Second job " ++ show job2 ++ " encountered error: " ++ err
-    -- Timeout cases
-    ((job1, DoneTimeout), _, _) -> pure $ Left $ show job1 ++ " timed out in OneOfOp"
-    ((job2, DoneTimeout), _, _) -> pure $ Left $ show job2 ++ " timed out in OneOfOp"
+    ((_, Done), Just (Right val), _) -> runEvalM spc kvdb env (cont val)
+    ((jobId, Done), Just (Left err), _) -> pure $ Left $ "First job " ++ show jobId ++ " encountered error: " ++ err
+    ((jobId, Done), _, Just (Left err)) -> pure $ Left $ "Second job " ++ show jobId ++ " encountered error: " ++ err
+    -- Timeout cases, should continue to find out about the other job
+    ((jobid, DoneTimeout), _, _) -> pure $ Left $ show jobid ++ " timed out in OneOfOp"
     -- Cancellation cases
-    ((job1, DoneCancelled), _, _) -> pure $ Left $ show job1 ++ " was cancelled in OneOfOp"
-    ((job2, DoneCancelled), _, _) -> pure $ Left $ show job2 ++ " was cancelled in OneOfOp"
+    ((jobid, DoneCancelled), _, _) -> pure $ Left $ show jobid ++ " was cancelled in OneOfOp"
     -- Crashes
-    ((job1, DoneCrashed), _, _) -> pure $ Left $ show job1 ++ " crashed in OneOfOp"
-    ((job2, DoneCrashed), _, _) -> pure $ Left $ show job2 ++ " crashed in OneOfOp"
+    ((jobid, DoneCrashed), _, _) -> pure $ Left $ show jobid ++ " crashed in OneOfOp"
     -- Fallback case
     _ -> pure $ Left "Both operations failed or were incomplete in OneOfOp"
 

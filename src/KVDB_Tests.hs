@@ -22,10 +22,10 @@ tests =
 asyncPutGetTest :: TestTree
 asyncPutGetTest = 
   testCase "add-ket-get-val" $ do
-    db <- startKVDB
+    db <- startKVDB :: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       threadDelay 1000
-      kvPut db 1 200
+      kvPut db 1 (200::Integer)
       v0 <- kvGet db 0
       v0 @?= 100
     kvPut db 0 100
@@ -35,11 +35,11 @@ asyncPutGetTest =
 asyncGetManyTimesTest :: TestTree
 asyncGetManyTimesTest = 
   testCase "add-ket-get-val" $ do
-    db <- startKVDB
+    db <- startKVDB :: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
       threadDelay 1000
-      kvPut db 1 200
+      kvPut db 1 (200::Integer)
       v0 @?= 100
     kvPut db 0 100
     v1 <- kvGet db 1
@@ -53,21 +53,21 @@ asyncGetManyTimesTest =
 asyncManyThreads :: TestTree
 asyncManyThreads = 
   testCase "add-ket-get-val" $ do
-    db <- startKVDB
+    db <- startKVDB:: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
       -- do some calculation
-      kvPut db 1 200
+      kvPut db 1 (200::Integer)
       v0 @?= 100
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
       -- do some calculation
-      kvPut db 2 300
+      kvPut db 2 (300::Integer)
       v0 @?= 100
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
       -- do some calculation
-      kvPut db 3 400
+      kvPut db 3 (400::Integer)
       v0 @?= 100
     kvPut db 0 100
     v1 <- kvGet db 1

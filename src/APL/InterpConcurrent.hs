@@ -101,6 +101,8 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
       case (result1, result2) of
         (Just (Right val), _) -> runEvalM spc kvdb env (cont val)
         (_, Just (Right val)) -> runEvalM spc kvdb env (cont val)
+        -- If the first calculated is an Left, and the other is still in a loop, 
+        -- we prefer to wait for the Right result than split out the Left result.
         (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
         (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
         (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"

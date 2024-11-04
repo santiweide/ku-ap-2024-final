@@ -170,6 +170,18 @@ tests =
             )
         )
         (ValInt 32)
+      -- (Left || Right but loop) -> Right but loop
+      , evalTest
+        "( true+false || (loop to calculate 2^10) -> 1024"
+        (OneOf 
+            ( 
+             Add (CstBool True) (CstBool False)
+            ) 
+            (
+              ForLoop ("x",CstInt 1) ("i",CstInt 10) (Mul (Var "x") (CstInt 2))
+            )
+        )
+        (ValInt 1024)
       --------------------------------------------
       --       Concurrency Test Simulation     --
       --         with Lambda and Apply         -- 

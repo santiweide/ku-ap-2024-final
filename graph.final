@@ -15,32 +15,29 @@ LExp ::= FExp
    | "let" var "=" Exp "in" Exp
    | "loop" var "=" Exp "for" var "<" Exp "do" Exp
    | "loop" var "=" Exp "while" Exp "do" Exp
-Exp8' ::=(* empty *)
+Exp7' ::=(* empty *)
        | "get" Atom
        | "put" Atom Atom 
-Exp8 ::= LExp Exp8'
-Exp7' ::= (* empty *)
+Exp7 ::= LExp Exp7'
+Exp6' ::= (* empty *)
        | Atom "." int
-Exp7 ::= Exp8 Exp7'
-Exp6' ::= "**" Exp6
-       | (* empty *)
-Exo4 ::= Exp7 Exp6'
-Exp5' ::= "*" Exp5
+Exp6 ::= Exp7 Exp6'
+Exp5' ::= (* empty *)
+       | "*" Exp5
        | "/" Exp5
-       | (* empty *)
 Exp5 ::= Exp6 Exp5'
-Exp4' ::= "+" Exp4
+Exp4' ::= (* empty *)
+       | "+" Exp4
        | "-" Exp4
-       | (* empty *)
 Exp4 ::= Exp5 Exp4'
-Exp3' ::=  "==" Exp3
-       | (* empty *)
+Exp3' ::= (* empty *)
+       | "==" Exp3
 Exp3 ::= Exp4 Exp3'
-Exp2' ::=  "&&" Exp2
-       | (* empty *)
+Exp2' ::= (* empty *)
+       | "&&" Exp2
 Exp2 ::= Exp3 Exp2'
-Exp1' ::=  "||" Exp1
-       | (* empty *)
+Exp1' ::= (* empty *)
+       | "||" Exp1
 Exp1 ::= Exp2 Exp1'
 Exp := Exp1
 

@@ -15,13 +15,14 @@ tests =
           replicate 100 asyncPutGetTest
           , replicate 100 asyncGetManyTimesTest 
           , replicate 100 asyncManyThreads
+          , replicate 1 asyncManyThreadsGetBlocks
         ]
 
 -- Async Put and Get fr one another thread
 --  to see the block is really working
 asyncPutGetTest :: TestTree
 asyncPutGetTest = 
-  testCase "add-ket-get-val" $ do
+  testCase "Simple Get and Put with thread delay" $ do
     db <- startKVDB :: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       threadDelay 1000
@@ -34,7 +35,7 @@ asyncPutGetTest =
 
 asyncGetManyTimesTest :: TestTree
 asyncGetManyTimesTest = 
-  testCase "add-ket-get-val" $ do
+  testCase "Get a key for N times" $ do
     db <- startKVDB :: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
@@ -52,7 +53,7 @@ asyncGetManyTimesTest =
 
 asyncManyThreads :: TestTree
 asyncManyThreads = 
-  testCase "add-ket-get-val" $ do
+  testCase "Put different keys in different threads" $ do
     db <- startKVDB:: IO (KVDB Integer Integer)
     _ <- forkIO $ do 
       v0 <- kvGet db 0  -- a kind of synchronize
@@ -76,3 +77,19 @@ asyncManyThreads =
     v1 @?= 200
     v2 @?= 300
     v3 @?= 400
+
+-- Dead lock simplest case
+-- We use kvGetWithTimeoutKill but not kvGetWithTimeout 
+-- because kvGetWithTimeoutKill is safer to recycle threads~
+asyncManyThreadsGetBlocks :: TestTree
+asyncManyThreadsGetBlocks = 
+  testCase "DeadLock on getting no-value-keys" $ do
+    db <- startKVDB:: IO (KVDB Integer Integer)
+    _ <- forkIO $ do 
+      v0 <- kvGetWithTimeoutKill db 1 0
+      v0 @?= Nothing
+    _ <- forkIO $ do 
+      v1 <- kvGetWithTimeoutKill db 1 1
+      v1 @?= Nothing
+    v2 <- kvGetWithTimeoutKill db 1 2
+    v2 @?= Nothing

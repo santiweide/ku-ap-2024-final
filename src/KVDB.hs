@@ -4,6 +4,7 @@ module KVDB
     startKVDB,
     kvGet,
     kvPut,
+    kvGetWithTimeoutKill, -- for unit test on Get Block && dead locks
   )
 where
 
@@ -22,7 +23,6 @@ data KVDB k v = KVDB (Server (KVDBMessage k v))
 -- | The central state for the KVDB.
 data KVDBState k v = KVDBState
   { kvdbEntries :: [(k, v)],                -- store of key-value pairs
-    kvdbChan    :: Chan (KVDBMessage k v),   -- communication channel for requests
     kvdbPendingGets :: [(k, [ReplyChan v])] -- the pending gets
   }
 
@@ -74,13 +74,12 @@ data KVDBMessage k v
 -- | Start a new KVDB instance.
 startKVDB :: (Ord k) => IO (KVDB k v)
 startKVDB = do
-  let initial_state c =
+  let initial_state =
         KVDBState
-          { kvdbChan = c,
-            kvdbEntries = [],
+          { kvdbEntries = [],
             kvdbPendingGets = []
           }
-  server <- spawn $ \c -> runKVDBM (initial_state c) $ handleMsg c
+  server <- spawn $ \c -> runKVDBM (initial_state) $ handleMsg c
   pure $ KVDB server
 
 handleMsg :: (Ord k) => Chan (KVDBMessage k v) -> KVDBM k v ()
@@ -124,3 +123,10 @@ kvGet (KVDB server) key =
 kvPut :: KVDB k v -> k -> v -> IO ()
 kvPut (KVDB server) key value = 
   sendTo server (Put key value)
+
+kvGetWithTimeoutKill :: KVDB k v -> Int -> k -> IO (Maybe v)
+kvGetWithTimeoutKill (KVDB server) seconds key = do
+  res <- actionWithTimeoutKill seconds $ requestReply server (\replyChan -> Get key replyChan)
+  case res of 
+    Left _ -> pure $ Nothing 
+    Right val -> pure $ Just $ val

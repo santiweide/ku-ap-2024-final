@@ -121,6 +121,10 @@ tests =
         "(put 0 10 && put 1 10) && get 1)).1"
         (Project (BothOf (BothOf (KvPut (CstInt 0) (CstInt 10)) (KvPut (CstInt 1) (CstInt 10))) (KvGet (CstInt 1))) 1)
         (ValInt 10)
+      -- invalid key
+      , evalTestFail
+        "get 1"
+        (KvGet (CstInt 1))
       --
       -- Should work after task C.
       , evalTest

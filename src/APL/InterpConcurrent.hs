@@ -104,6 +104,8 @@ runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
         (Just (Left err), _) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
         (_, Just (Left err)) -> pure $ Left $ "A job done " ++ show jobId ++ " encountered error: " ++ err
         (_, _) -> pure $ Left $ "JobDone " ++ show jobId ++ ", but nothing evaled"
+    -- Although we will never reach these States based on current SPC
+    -- we still write secific error message handlers for these States
     (jobId, DoneTimeout) -> do 
       if jobId == jobId1 
         then jobCancel spc $ jobId2

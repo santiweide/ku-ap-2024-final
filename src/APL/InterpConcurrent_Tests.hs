@@ -36,6 +36,18 @@ tests =
         "(1+2) && (3+4)"
         (BothOf (Add (CstInt 1) (CstInt 2)) (Add (CstInt 3) (CstInt 4)))
         (ValTuple [ValInt 3,ValInt 7])
+      -- (Left && Left) -> Left
+      , evalTestFail
+        "true+false && true-false"
+        (BothOf (Add (CstBool True) (CstBool False)) (Sub (CstBool True) (CstBool False)))
+      -- (Right || Left) -> Right
+      , evalTestFail
+        "true+false && 2+1"
+        (BothOf (Add (CstBool True) (CstBool False)) (Add (CstInt 2) (CstInt 1)))
+      -- (Left || Right) -> Right
+      , evalTestFail
+        " 2+1 && true+false"
+        (BothOf  (Add (CstInt 2) (CstInt 1))  (Add (CstBool True) (CstBool False)) )
       -- get wait put
       , evalTest
         "(get 0 && put 0 42)"
@@ -73,6 +85,20 @@ tests =
       , evalTest 
         " (1+2) || (3+4+5+6)"
         (OneOf (Add (CstInt 1) (CstInt 2)) (Add (Add (Add (CstInt 3) (CstInt 4)) (CstInt 5)) (CstInt 6)))
+        (ValInt 3)
+      -- (Left || Left) -> Left
+      , evalTestFail
+        "true+false || true-false"
+        (OneOf (Add (CstBool True) (CstBool False)) (Sub (CstBool True) (CstBool False)))
+      -- (Right || Left) -> Right
+      , evalTest
+        "true+false || 2+1"
+        (OneOf (Add (CstBool True) (CstBool False)) (Add (CstInt 2) (CstInt 1)))
+        (ValInt 3)
+      -- (Left || Right) -> Right
+      , evalTest
+        " 2+1|| true+false"
+        (OneOf  (Add (CstInt 2) (CstInt 1))  (Add (CstBool True) (CstBool False)) )
         (ValInt 3)
       -- eval order: e1 -> e2, so e1 is the "First one to finish"
       , evalTest

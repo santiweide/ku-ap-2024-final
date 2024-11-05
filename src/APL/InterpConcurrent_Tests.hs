@@ -36,6 +36,18 @@ tests =
         "(1+2) && (3+4)"
         (BothOf (Add (CstInt 1) (CstInt 2)) (Add (CstInt 3) (CstInt 4)))
         (ValTuple [ValInt 3,ValInt 7])
+      , evalTest 
+        "get 0 && put 0 true"
+        (BothOf (KvGet (CstInt 0)) (KvPut (CstInt 0) (CstBool True)))
+        (ValTuple [ValBool True,ValBool True])
+      , evalTest
+        "get 0 + 1 && put 0 2"
+        (BothOf (Add (KvGet (CstInt 0)) (CstInt 1)) (KvPut (CstInt 0) (CstInt 2)))
+        (ValTuple [ValInt 3,ValInt 2])
+      , evalTest 
+        "put (get 0) 1 && let x = put 0 2 in get 2"
+        (BothOf (KvPut (KvGet (CstInt 0)) (CstInt 1)) (Let "x" (KvPut (CstInt 0) (CstInt 2)) (KvGet (CstInt 2))))
+        (ValTuple [ValInt 1,ValInt 1])
       -- (Left && Left) -> Left
       , evalTestFail
         "true+false && true-false"

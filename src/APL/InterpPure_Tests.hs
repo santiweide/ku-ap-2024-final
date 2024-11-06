@@ -89,6 +89,10 @@ tests =
         "For and While Loop"
         (WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)]))
         (ValTuple [ValInt 1024,ValInt 0])
+      , evalTest 
+        "Double For loop"
+        (ForLoop ("x",KvPut (CstInt 1) (CstInt 1)) ("i",CstInt 10) (ForLoop ("y",KvPut (CstInt 0) (CstInt 1)) ("j",CstInt 10) (KvPut (CstInt 0) (Add (KvGet (CstInt 0)) (CstInt 1)))))
+        (ValInt 11)
       ---------------------------
       -- Concurrency Test Pure --
       ---------------------------

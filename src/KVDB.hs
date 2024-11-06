@@ -4,7 +4,7 @@ module KVDB
     startKVDB,
     kvGet,
     kvPut,
-    kvGetWithTimeoutKill, -- for unit test on Get Block && dead locks
+    kvGetWithTimeoutKill, -- for unit test on MsgGet Block && dead locks
   )
 where
 
@@ -68,8 +68,11 @@ runKVDBM state (KVDBM f) = fst <$> f state
 
 -- | 
 data KVDBMessage k v
-  = Put k v                   -- Insert or update a key-value pair
-  | Get k (ReplyChan v)       -- Request a value by key, with a channel for the reply
+  =  
+  -- | Insert or update a key-value pair
+    MsgPut k v                   
+  -- | Request a value by key, with a channel for the reply
+  | MsgGet k (ReplyChan v)
 
 -- | Start a new KVDB instance.
 startKVDB :: (Ord k) => IO (KVDB k v)
@@ -86,7 +89,7 @@ handleMsg :: (Ord k) => Chan (KVDBMessage k v) -> KVDBM k v ()
 handleMsg chan = do
   msg <- io $ receive chan
   case msg of
-    Put key value -> do
+    MsgPut key value -> do
       modify $ \s -> s { kvdbEntries = (key, value) : filter ((/= key) . fst) (kvdbEntries s) }
       state <- get
       let 
@@ -96,10 +99,10 @@ handleMsg chan = do
       modify $ \s -> s { kvdbPendingGets = rest }
       handleMsg chan
 
-    -- Handle Get request: 
+    -- Handle MsgGet request: 
     -- reply immediately if value is present,
     --  otherwise store reply channel in pending gets
-    Get key replyChan -> do
+    MsgGet key replyChan -> do
       state <- get
       let 
         entries = kvdbEntries state 
@@ -116,17 +119,17 @@ handleMsg chan = do
 -- function returns the now available value.
 kvGet :: KVDB k v -> k -> IO v
 kvGet (KVDB server) key = 
-  requestReply server (\replyChan -> Get key replyChan)
+  requestReply server $ \replyChan -> MsgGet key replyChan
 
 -- | Write a key-value mapping to the database. Replaces any prior
 -- mapping of the key.
 kvPut :: KVDB k v -> k -> v -> IO ()
 kvPut (KVDB server) key value = 
-  sendTo server (Put key value)
+  sendTo server $ MsgPut key value
 
 kvGetWithTimeoutKill :: KVDB k v -> Int -> k -> IO (Maybe v)
 kvGetWithTimeoutKill (KVDB server) seconds key = do
-  res <- actionWithTimeoutKill seconds $ requestReply server (\replyChan -> Get key replyChan)
+  res <- actionWithTimeoutKill seconds $ requestReply server (\replyChan -> MsgGet key replyChan)
   case res of 
     Left _ -> pure $ Nothing 
     Right val -> pure $ Just $ val

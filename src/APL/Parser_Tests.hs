@@ -56,6 +56,8 @@ tests =
       , parserTest "loop x = 1 while x == 1 do x" $ (WhileLoop ("x",CstInt 1) (Eql (Var "x") (CstInt 1)) (Var "x"))
       -- while mix for loop
       , parserTest "loop x = (1,10) while if (x.1 == 0) then false else true do (x.0*2,x.1-1)" $ WhileLoop ("x",Tuple [CstInt 1,CstInt 10]) (If (Eql (Project (Var "x") 1) (CstInt 0)) (CstBool False) (CstBool True)) (Tuple [Mul (Project (Var "x") 0) (CstInt 2),Sub (Project (Var "x") 1) (CstInt 1)])
+      -- double for loop
+      , parserTest "(loop x=(put 1 1) for i < 10 do loop y=(put 0 1) for j < 10 do put 0 ((get 0) + 1))" $  (ForLoop ("x",KvPut (CstInt 1) (CstInt 1)) ("i",CstInt 10) (ForLoop ("y",KvPut (CstInt 0) (CstInt 1)) ("j",CstInt 10) (KvPut (CstInt 0) (Add (KvGet (CstInt 0)) (CstInt 1)))))
       ------------------------
       ---- && and || ----
       ------------------------

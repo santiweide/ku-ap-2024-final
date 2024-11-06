@@ -19,8 +19,7 @@ runEval expr = do
 runEvalM :: SPC -> KVDB Val Val -> Env -> EvalM a -> IO (Either Error a)
 runEvalM _ _ _ (Pure result) = pure $ Right result
 runEvalM _ _ _ (Free (ErrorOp e)) = pure $ Left e
-runEvalM spc kvdb env (Free (ReadOp cont)) = do
-  runEvalM spc kvdb env $ cont $ env 
+runEvalM spc kvdb env (Free (ReadOp cont)) = runEvalM spc kvdb env $ cont $ env 
 
 runEvalM spc kvdb env (Free (BothOfOp op1 op2 cont)) = do
   result1Ref <- newIORef Nothing
@@ -41,48 +40,9 @@ runEvalM spc kvdb env (Free (BothOfOp op1 op2 cont)) = do
         (Just (Right _), Just (Left err)) -> 
           pure $ Left $ "Despite JobDone Done, " ++ show job2 ++ " has error of " ++ err
         _ -> pure $ Left $ "Despite JobDone Done, " ++ show job1 ++ " and " ++ show job2 ++ "'s results were missing in BothOfOp"
-
-    -- Timeout cases
-    ((job1, DoneTimeout), (job2, Done)) ->
-      pure $ Left $ show job1 ++ " timed out in BothOfOp, with " ++ show job2 ++ " completed successfully"
-    ((job1, Done), (job2, DoneTimeout)) ->
-      pure $ Left $ show job2 ++ " timed out in BothOfOp, with " ++ show job1 ++ " completed successfully"
-    ((job1, DoneTimeout), (job2, DoneTimeout)) ->
-      pure $ Left $ show job1 ++ " and " ++ show job2 ++ " both timed out in BothOfOp"
-
-    -- Cancellation cases
-    ((job1, DoneCancelled), (job2, Done)) ->
-      pure $ Left $ show job1 ++ " was cancelled in BothOfOp, with " ++ show job2 ++ " completed successfully"
-    ((job1, Done), (job2, DoneCancelled)) ->
-      pure $ Left $ show job2 ++ " was cancelled in BothOfOp, with " ++ show job1 ++ " completed successfully"
-    ((job1, DoneCancelled), (job2, DoneCancelled)) ->
-      pure $ Left $ show job1 ++ " and " ++ show job2 ++ " both were cancelled in BothOfOp"
-
-    -- Crash cases
-    ((job1, DoneCrashed), (job2, Done)) ->
-      pure $ Left $ show job1 ++ " crashed in BothOfOp, with " ++ show job2 ++ " completed successfully"
-    ((job1, Done), (job2, DoneCrashed)) ->
-      pure $ Left $ show job2 ++ " crashed in BothOfOp, with " ++ show job1 ++ " completed successfully"
-    ((job1, DoneCrashed), (job2, DoneCrashed)) ->
-      pure $ Left $ show job1 ++ " and " ++ show job2 ++ " both crashed in BothOfOp"
-
-    -- Mixed cases (Timeout and Cancelled)
-    ((job1, DoneTimeout), (job2, DoneCancelled)) ->
-      pure $ Left $ show job1 ++ " timed out and " ++ show job2 ++ " was cancelled in BothOfOp"
-    ((job1, DoneCancelled), (job2, DoneTimeout)) ->
-      pure $ Left $ show job2 ++ " timed out and " ++ show job1 ++ " was cancelled in BothOfOp"
-
-    -- Mixed cases (Timeout and Crashed)
-    ((job1, DoneTimeout), (job2, DoneCrashed)) ->
-      pure $ Left $ show job1 ++ " timed out and " ++ show job2 ++ " crashed in BothOfOp"
-    ((job1, DoneCrashed), (job2, DoneTimeout)) ->
-      pure $ Left $ show job2 ++ " timed out and " ++ show job1 ++ " crashed in BothOfOp"
-
-    -- Mixed cases (Cancelled and Crashed)
-    ((job1, DoneCancelled), (job2, DoneCrashed)) ->
-      pure $ Left $ show job1 ++ " was cancelled and " ++ show job2 ++ " crashed in BothOfOp"
-    ((job1, DoneCrashed), (job2, DoneCancelled)) ->
-      pure $ Left $ show job2 ++ " was cancelled and " ++ show job1 ++ " crashed in BothOfOp"
+    -- other mixed cases, keep reporting noisy-ly
+    (_, _) -> pure $ Left $ "BothOf failed, with" ++ show j1 ++ ", and " ++ show j2
+    
 
 -- Cancel the other job when our job is finished.
 runEvalM spc kvdb env (Free (OneOfOp op1 op2 cont)) = do
